@@ -564,6 +564,7 @@ function renderNotMember() {
     <div class="code" id="uid">${esc(uid)}</div>
     <button class="btn" id="copy-uid" type="button">Copy ID</button>
     <p class="small">Give the document one field, for example <span class="mono">name</span> = your name. Then reload this page.</p>
+    <p class="small muted">Already added it? Check that the rules from <span class="mono">firestore.rules</span> are published (Firestore Database &gt; Rules). Until they are, the database turns everyone away.</p>
     <button class="btn primary" id="nm-reload" type="button">Reload</button>
     <p class="alt"><button class="linkbtn" id="nm-out" type="button">Sign out</button></p>
   </div></div>`;
