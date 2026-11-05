@@ -1,0 +1,338 @@
+<!doctype html><html><head><meta charset=utf8><script src="../../assets/app-bridge.js" data-app="house-upkeep-ledger"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>House Upkeep Ledger</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single working column; summary strip, then tabbed ledger (Upcoming / Systems / History). */
+:root {
+  --bg: #f3f5f2; --surface: #ffffff; --ink: #1c2420; --muted: #5d6a63; --line: #d8ded9;
+  --accent: #2f5d4e; --accent-ink: #ffffff; --accent-soft: #e2ece7;
+  --late: #b4372c; --late-soft: #f8e3df; --soon: #9a6400; --soon-soft: #f8edd6; --ok: #3d6b4f; --ok-soft: #e3efe6;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141917; --surface: #1c2320; --ink: #e5ebe7; --muted: #9aa8a0; --line: #2f3a35;
+  --accent: #8cc4ad; --accent-ink: #10201a; --accent-soft: #23352e;
+  --late: #f08a7e; --late-soft: #3a211e; --soon: #e5b55c; --soon-soft: #362c18; --ok: #8cc49d; --ok-soft: #1f3226;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141917; --surface: #1c2320; --ink: #e5ebe7; --muted: #9aa8a0; --line: #2f3a35;
+  --accent: #8cc4ad; --accent-ink: #10201a; --accent-soft: #23352e;
+  --late: #f08a7e; --late-soft: #3a211e; --soon: #e5b55c; --soon-soft: #362c18; --ok: #8cc49d; --ok-soft: #1f3226;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 4px 0 0; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; }
+.stat b { font-family: var(--f-mono); font-size: 1.6rem; font-weight: 500; }
+.stat span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.stat.late b { color: var(--late); } .stat.soon b { color: var(--soon); }
+@media (max-width: 560px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+.tabs button { border: 0; background: none; color: var(--muted); font: 600 0.9rem var(--f-body); padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 0.85rem var(--f-body); padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--late); }
+.btn.small { padding: 4px 9px; font-size: 0.8rem; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.list { display: grid; gap: 8px; }
+.group-h { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 10px 0 2px; font-weight: 600; }
+.row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.row .main { min-width: 0; }
+.row .title { font-weight: 600; }
+.row .meta { color: var(--muted); font-size: 0.84rem; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.row .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.pill { font: 500 0.75rem var(--f-mono); padding: 3px 8px; border-radius: 999px; white-space: nowrap; text-align: center; min-width: 74px; }
+.pill.late { background: var(--late-soft); color: var(--late); }
+.pill.soon { background: var(--soon-soft); color: var(--soon); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.tag { font-size: 0.72rem; padding: 1px 7px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+@media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr); } .row .actions { justify-content: flex-start; } .pill { justify-self: start; } }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 6px; align-content: start; }
+.card h3 { font-size: 1.05rem; font-weight: 500; }
+.card dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; margin: 0; font-size: 0.84rem; }
+.card dt { color: var(--muted); } .card dd { margin: 0; overflow-wrap: anywhere; }
+.card .actions { display: flex; gap: 6px; margin-top: 4px; }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 22px; color: var(--muted); text-align: center; }
+.note { font-size: 0.84rem; color: var(--muted); }
+.notice { background: var(--soon-soft); color: var(--soon); border-radius: 8px; padding: 8px 12px; font-size: 0.86rem; }
+.histsum { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 0.86rem; }
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); padding: 0; width: min(480px, calc(100vw - 32px)); }
+dialog::backdrop { background: rgb(0 0 0 / 0.4); }
+dialog form { padding: 20px; display: grid; gap: 12px; }
+dialog h2 { font-size: 1.25rem; font-weight: 500; }
+.field { display: grid; gap: 4px; font-size: 0.84rem; color: var(--muted); font-weight: 500; }
+.field input, .field select, .field textarea { font: 400 0.95rem var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; width: 100%; box-sizing: border-box; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 0.88rem; }
+.dlg-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.dlg-actions .spacer { flex: 1; }
+@media (prefers-reduced-motion: no-preference) { .row, .card { transition: border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>House Upkeep Ledger</h1>
+    <p class="sub">What's due around the house, what's installed, and what's been done.</p>
+  </header>
+
+  <section class="summary" aria-label="Summary">
+    <div class="stat late"><b id="s-late">–</b><span>Overdue</span></div>
+    <div class="stat soon"><b id="s-soon">–</b><span>Due in 30 days</span></div>
+    <div class="stat"><b id="s-sys">–</b><span>Systems tracked</span></div>
+    <div class="stat"><b id="s-spend">–</b><span id="s-spend-l">Spent this year</span></div>
+  </section>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <div class="bar">
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="upcoming" aria-selected="true">Upcoming</button>
+      <button role="tab" data-tab="systems" aria-selected="false">Systems</button>
+      <button role="tab" data-tab="history" aria-selected="false">History</button>
+    </div>
+    <button class="btn primary" id="add-btn" data-edit>Add task</button>
+  </div>
+
+  <main id="view"><div class="empty">Loading your house…</div></main>
+</div>
+
+<dialog id="dlg"><form id="dlg-form" method="dialog"></form></dialog>
+
+<script>
+const S = { tasks: [], systems: [], log: [], tab: "upcoming", canWrite: true, db: null };
+const $ = (s) => document.querySelector(s);
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const CATS = ["Heating & cooling","Plumbing","Electrical","Appliance","Roof & exterior","Safety","Yard","Interior","Other"];
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parse = (s) => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const fmt = (d) => `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+const money = (n) => "$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+const sysName = (id) => S.systems.find(s => s.id === id)?.name || "";
+
+try { const t = localStorage.getItem("hul-tab"); if (t) S.tab = t; } catch {}
+
+function addMonths(d, n) {
+  const r = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  const last = new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate();
+  r.setDate(Math.min(d.getDate(), last)); return r;
+}
+// Next due: last done + interval; if never logged, the end of the task's next starting month.
+function dueOf(t) {
+  if (t.lastDone) return addMonths(parse(t.lastDone), Number(t.everyMonths) || 12);
+  const now = today(); const m = (Number(t.month) || now.getMonth() + 1) - 1;
+  let y = now.getFullYear(); if (m < now.getMonth()) y++;
+  return new Date(y, m + 1, 0);
+}
+function status(t) {
+  const days = Math.round((dueOf(t) - today()) / 864e5);
+  if (days < 0) return { cls: "late", label: `${-days}d late`, days };
+  if (days === 0) return { cls: "late", label: "today", days };
+  if (days <= 30) return { cls: "soon", label: `in ${days}d`, days };
+  return { cls: "ok", label: days < 60 ? `in ${days}d` : `in ${Math.round(days / 30.4)}mo`, days };
+}
+const every = (n) => { n = Number(n); return n === 1 ? "monthly" : n === 12 ? "yearly" : n % 12 === 0 ? `every ${n/12} yrs` : `every ${n} mo`; };
+
+function render() {
+  const sts = S.tasks.map(t => ({ t, s: status(t) }));
+  $("#s-late").textContent = sts.filter(x => x.s.days <= 0).length;
+  $("#s-soon").textContent = sts.filter(x => x.s.days > 0 && x.s.days <= 30).length;
+  $("#s-sys").textContent = S.systems.length;
+  const yr = String(today().getFullYear());
+  $("#s-spend").textContent = money(S.log.filter(l => (l.date || "").startsWith(yr)).reduce((a, l) => a + (Number(l.cost) || 0), 0));
+  $("#s-spend-l").textContent = `Spent in ${yr}`;
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
+  $("#add-btn").textContent = { upcoming: "Add task", systems: "Add system", history: "Log work" }[S.tab];
+  document.querySelectorAll("[data-edit]").forEach(el => el.hidden = !S.canWrite);
+  const v = $("#view");
+  if (S.tab === "upcoming") v.innerHTML = upcomingHTML(sts);
+  else if (S.tab === "systems") v.innerHTML = systemsHTML();
+  else v.innerHTML = historyHTML();
+  v.querySelectorAll("[data-edit]").forEach(el => el.hidden = !S.canWrite);
+}
+
+function upcomingHTML(sts) {
+  if (!S.tasks.length) return `<div class="empty">No maintenance tasks yet. Use <b>Add task</b> to set up the first one, like "Replace furnace filter, every 3 months".</div>`;
+  sts.sort((a, b) => a.s.days - b.s.days);
+  const groups = [["Overdue or due today", x => x.s.days <= 0], ["Next 30 days", x => x.s.days > 0 && x.s.days <= 30], ["Next 3 months", x => x.s.days > 30 && x.s.days <= 92], ["Later", x => x.s.days > 92]];
+  return groups.map(([h, f]) => {
+    const items = sts.filter(f); if (!items.length) return "";
+    return `<div class="group-h">${h}</div><div class="list">${items.map(({ t, s }) => `
+      <div class="row">
+        <span class="pill ${s.cls}">${s.label}</span>
+        <div class="main">
+          <div class="title">${esc(t.title)} ${t.pro ? '<span class="tag">Pro</span>' : ""}</div>
+          <div class="meta"><span class="mono">due ${fmt(dueOf(t))}</span><span>${every(t.everyMonths)}</span>${t.systemId && sysName(t.systemId) ? `<span>${esc(sysName(t.systemId))}</span>` : ""}<span>${t.lastDone ? "last done " + fmt(parse(t.lastDone)) : "never logged"}</span></div>
+          ${t.notes ? `<div class="note">${esc(t.notes)}</div>` : ""}
+        </div>
+        <div class="actions"><button class="btn small primary" data-edit data-done="${t.id}">Mark done</button><button class="btn small" data-edit data-etask="${t.id}">Edit</button></div>
+      </div>`).join("")}</div>`;
+  }).join("");
+}
+
+function systemsHTML() {
+  if (!S.systems.length) return `<div class="empty">No systems or appliances yet. Use <b>Add system</b> to record things like the furnace, water heater, or roof, with brand, model, and install year.</div>`;
+  const yr = today().getFullYear();
+  const sorted = [...S.systems].sort((a, b) => (a.category || "").localeCompare(b.category || "") || a.name.localeCompare(b.name));
+  return `<div class="cards">${sorted.map(s => {
+    const tasks = S.tasks.filter(t => t.systemId === s.id);
+    const age = s.installedYear ? `${s.installedYear} (${yr - Number(s.installedYear)} yrs)` : "";
+    return `<div class="card">
+      <span class="tag" style="justify-self:start">${esc(s.category || "Other")}</span>
+      <h3>${esc(s.name)}</h3>
+      <dl>
+        ${s.location ? `<dt>Where</dt><dd>${esc(s.location)}</dd>` : ""}
+        ${s.brand || s.model ? `<dt>Make</dt><dd>${esc([s.brand, s.model].filter(Boolean).join(" "))}</dd>` : ""}
+        ${age ? `<dt>Installed</dt><dd class="mono">${age}</dd>` : ""}
+        <dt>Tasks</dt><dd>${tasks.length ? tasks.map(t => esc(t.title)).join(", ") : "none"}</dd>
+      </dl>
+      ${s.notes ? `<div class="note">${esc(s.notes)}</div>` : ""}
+      <div class="actions"><button class="btn small" data-edit data-esys="${s.id}">Edit</button></div>
+    </div>`; }).join("")}</div>`;
+}
+
+function historyHTML() {
+  if (!S.log.length) return `<div class="empty">Nothing logged yet. Marking a task done adds it here, or use <b>Log work</b> for repairs and one-off jobs.</div>`;
+  const sorted = [...S.log].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const total = S.log.reduce((a, l) => a + (Number(l.cost) || 0), 0);
+  return `<div class="histsum"><span>${S.log.length} entries</span><span>All-time spend <b class="mono">${money(total)}</b></span></div>
+  <div class="list" style="margin-top:8px">${sorted.map(l => `
+    <div class="row">
+      <span class="pill ok mono">${l.date ? MONTHS[parse(l.date).getMonth()] + " " + parse(l.date).getDate() + " ’" + String(parse(l.date).getFullYear()).slice(2) : ""}</span>
+      <div class="main">
+        <div class="title">${esc(l.title)}</div>
+        <div class="meta">${l.systemId && sysName(l.systemId) ? `<span>${esc(sysName(l.systemId))}</span>` : ""}${l.by ? `<span>by ${esc(l.by)}</span>` : ""}${Number(l.cost) ? `<span class="mono">${money(l.cost)}</span>` : ""}</div>
+        ${l.notes ? `<div class="note">${esc(l.notes)}</div>` : ""}
+      </div>
+      <div class="actions"><button class="btn small" data-edit data-elog="${l.id}">Edit</button></div>
+    </div>`).join("")}</div>`;
+}
+
+// ---- Dialogs ----
+const dlg = $("#dlg"), form = $("#dlg-form");
+const sysOptions = (sel) => `<option value="">None</option>` + [...S.systems].sort((a,b) => a.name.localeCompare(b.name)).map(s => `<option value="${s.id}" ${s.id === sel ? "selected" : ""}>${esc(s.name)}</option>`).join("");
+let onSave = null, onDelete = null;
+function openDlg(html, save, del) {
+  form.innerHTML = html + `<div class="dlg-actions">${del ? '<button type="button" class="btn danger" id="dlg-del">Delete</button><span class="spacer"></span>' : ""}<button type="button" class="btn" id="dlg-cancel">Cancel</button><button type="submit" class="btn primary">Save</button></div>`;
+  onSave = save; onDelete = del;
+  $("#dlg-cancel").onclick = () => dlg.close();
+  if (del) $("#dlg-del").onclick = async (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed) { dlg.close(); await safe(del); } else { b.dataset.armed = "1"; b.textContent = "Tap again to delete"; }
+  };
+  dlg.showModal();
+}
+form.addEventListener("submit", async (e) => {
+  e.preventDefault(); const fd = Object.fromEntries(new FormData(form));
+  fd.pro = form.querySelector("[name=pro]")?.checked || false;
+  dlg.close(); await safe(() => onSave(fd));
+});
+async function safe(fn) {
+  try { await fn(); } catch (e) {
+    showNotice(e?.code === "quota_exceeded" ? "The ledger is full. Delete some old entries and try again." : "That change didn't save. Check your connection and try again.");
+  }
+}
+function showNotice(msg) { const n = $("#notice"); n.textContent = msg; n.hidden = !msg; }
+
+function taskDlg(t = {}) {
+  openDlg(`<h2>${t.id ? "Edit task" : "New task"}</h2>
+    <label class="field">Task<input id="f-title" name="title" required value="${esc(t.title)}" placeholder="Replace furnace filter"></label>
+    <div class="two">
+      <label class="field">Repeats every (months)<input id="f-every" name="everyMonths" type="number" min="1" max="240" required value="${esc(t.everyMonths || 12)}"></label>
+      <label class="field">First due in<select id="f-month" name="month">${MONTHS.map((m, i) => `<option value="${i+1}" ${Number(t.month || today().getMonth()+1) === i+1 ? "selected" : ""}>${m}</option>`).join("")}</select></label>
+    </div>
+    <div class="two">
+      <label class="field">System<select id="f-sys" name="systemId">${sysOptions(t.systemId)}</select></label>
+      <label class="field">Last done<input id="f-last" name="lastDone" type="date" value="${esc(t.lastDone)}"></label>
+    </div>
+    <label class="check"><input id="f-pro" type="checkbox" name="pro" ${t.pro ? "checked" : ""}> Usually hire a pro</label>
+    <label class="field">Notes<textarea id="f-notes" name="notes" rows="2">${esc(t.notes)}</textarea></label>
+    <p class="note" style="margin:0">"First due in" only matters until the task is logged once; after that it repeats from the last done date.</p>`,
+    async (f) => {
+      const body = { title: f.title.trim(), everyMonths: Number(f.everyMonths), month: Number(f.month), systemId: f.systemId || "", lastDone: f.lastDone || "", pro: f.pro, notes: f.notes.trim(), createdAt: t.createdAt || new Date().toISOString() };
+      await S.db.collection("tasks").doc(t.id || undefined).set(body);
+    },
+    t.id ? () => S.db.collection("tasks").doc(t.id).delete() : null);
+}
+function sysDlg(s = {}) {
+  openDlg(`<h2>${s.id ? "Edit system" : "New system or appliance"}</h2>
+    <label class="field">Name<input id="f-name" name="name" required value="${esc(s.name)}" placeholder="Water heater"></label>
+    <div class="two">
+      <label class="field">Category<select id="f-cat" name="category">${CATS.map(c => `<option ${c === (s.category || "Other") ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+      <label class="field">Location<input id="f-loc" name="location" value="${esc(s.location)}" placeholder="Basement"></label>
+    </div>
+    <div class="two">
+      <label class="field">Brand<input id="f-brand" name="brand" value="${esc(s.brand)}"></label>
+      <label class="field">Model<input id="f-model" name="model" value="${esc(s.model)}"></label>
+    </div>
+    <label class="field">Year installed<input id="f-year" name="installedYear" type="number" min="1850" max="2100" value="${esc(s.installedYear)}"></label>
+    <label class="field">Notes<textarea id="f-snotes" name="notes" rows="2" placeholder="Filter size, warranty, serial number…">${esc(s.notes)}</textarea></label>`,
+    async (f) => {
+      const body = { name: f.name.trim(), category: f.category, location: f.location.trim(), brand: f.brand.trim(), model: f.model.trim(), installedYear: f.installedYear ? Number(f.installedYear) : "", notes: f.notes.trim(), createdAt: s.createdAt || new Date().toISOString() };
+      await S.db.collection("systems").doc(s.id || undefined).set(body);
+    },
+    s.id ? () => S.db.collection("systems").doc(s.id).delete() : null);
+}
+function logDlg(l = {}, task = null) {
+  const title = l.title || task?.title || "";
+  openDlg(`<h2>${task ? "Mark done" : l.id ? "Edit entry" : "Log work"}</h2>
+    <label class="field">What was done<input id="f-ltitle" name="title" required value="${esc(title)}"></label>
+    <div class="two">
+      <label class="field">Date<input id="f-date" name="date" type="date" required value="${esc(l.date || iso(today()))}"></label>
+      <label class="field">Cost ($)<input id="f-cost" name="cost" type="number" min="0" step="0.01" value="${esc(l.cost)}"></label>
+    </div>
+    <div class="two">
+      <label class="field">Done by<input id="f-by" name="by" value="${esc(l.by)}" placeholder="Me, or company name"></label>
+      <label class="field">System<select id="f-lsys" name="systemId">${sysOptions(l.systemId || task?.systemId)}</select></label>
+    </div>
+    <label class="field">Notes<textarea id="f-lnotes" name="notes" rows="2" placeholder="Parts used, what they found…">${esc(l.notes)}</textarea></label>`,
+    async (f) => {
+      const body = { title: f.title.trim(), date: f.date, cost: f.cost ? Number(f.cost) : 0, by: f.by.trim(), systemId: f.systemId || "", notes: f.notes.trim(), taskId: l.taskId || task?.id || "", createdAt: l.createdAt || new Date().toISOString() };
+      await S.db.collection("log").doc(l.id || undefined).set(body);
+      if (task && (!task.lastDone || f.date > task.lastDone)) await S.db.collection("tasks").doc(task.id).update({ lastDone: f.date });
+    },
+    l.id ? () => S.db.collection("log").doc(l.id).delete() : null);
+}
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.tab) { S.tab = b.dataset.tab; try { localStorage.setItem("hul-tab", S.tab); } catch {} render(); return; }
+  if (!S.db || !S.canWrite) return;
+  if (b.id === "add-btn") return S.tab === "upcoming" ? taskDlg() : S.tab === "systems" ? sysDlg() : logDlg();
+  if (b.dataset.done) return logDlg({}, S.tasks.find(t => t.id === b.dataset.done));
+  if (b.dataset.etask) return taskDlg(S.tasks.find(t => t.id === b.dataset.etask));
+  if (b.dataset.esys) return sysDlg(S.systems.find(s => s.id === b.dataset.esys));
+  if (b.dataset.elog) return logDlg(S.log.find(l => l.id === b.dataset.elog));
+});
+
+render();
+(async () => {
+  const db = await window.claude?.use?.("db");
+  if (!db) { S.canWrite = false; $("#view").innerHTML = `<div class="empty">Sign in to claude.ai to see and update this house's ledger.</div>`; return; }
+  S.db = db;
+  const user = await window.claude.use("user");
+  const can = user ? await user.can("data.write") : null;
+  if (can === false) S.canWrite = false;
+  const loaded = new Set();
+  for (const name of ["tasks", "systems", "log"]) {
+    db.collection(name).onSnapshot((snap) => {
+      S[name] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      loaded.add(name); if (loaded.size === 3) render();
+    }, () => showNotice("Lost the connection to the ledger. Reload the page to reconnect."));
+  }
+})();
+</script>
+
+</body></html>

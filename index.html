@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Keel</title>
+<meta name="description" content="Household life tools in one place: chores, house upkeep, garden, pantry, cars, fitness and contacts.">
+<meta name="theme-color" content="#f3f1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1419" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Keel">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/keel.css">
+<script>
+  // Apply the saved theme before first paint.
+  try { const t = localStorage.getItem("keel:theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+<div class="shell" id="shell">
+  <aside class="side" aria-label="Keel">
+    <a class="brand" href="#/today">
+      <span class="brand-mark" data-icon="keel"></span>
+      <span class="brand-text"><span class="brand-name">Keel</span><span class="brand-sub" id="side-date"></span></span>
+    </a>
+    <nav class="nav" id="side-nav" aria-label="Apps"></nav>
+    <div class="side-foot">
+      <div class="sync" id="side-sync"><span class="dot"></span><span>Starting…</span></div>
+      <nav class="nav" aria-label="Keel settings"><a href="#/settings" data-route="settings"><span class="chip-i today" data-icon="gear"></span><span class="grow">Settings</span></a></nav>
+    </div>
+  </aside>
+  <main class="main" id="main">
+    <div class="view" id="view" tabindex="-1"></div>
+  </main>
+  <nav class="tabbar" id="tabbar" aria-label="Apps"></nav>
+</div>
+<div id="overlay"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script type="module" src="assets/keel.js"></script>
+</body>
+</html>

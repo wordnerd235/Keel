@@ -1,0 +1,437 @@
+<!doctype html><html><head><meta charset=utf8><script src="../../assets/app-bridge.js" data-app="pantry-recipe-book"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pantry &amp; Recipe Book</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one calm column, sticky tab strip, labelled shelves like jar labels; enamelware blue on a cool off-white */
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --ink:#1d282c; --muted:#5b696e; --line:#d6dedd;
+  --accent:#2450a6; --accent-ink:#ffffff; --accent-soft:#e2e9f6;
+  --ok:#2c7650; --ok-soft:#e1f1e7; --warn:#9a6a08; --warn-soft:#f8eed6; --bad:#ad3434; --bad-soft:#f8e2e0;
+  --shadow:0 1px 2px rgba(20,40,50,.06),0 6px 24px rgba(20,40,50,.08);
+  --f-display:"Young Serif",Georgia,"Times New Roman",serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111618; --surface:#192124; --ink:#e4ebeb; --muted:#97a5a9; --line:#2a3438;
+  --accent:#86a8ef; --accent-ink:#0f1830; --accent-soft:#1f2b45;
+  --ok:#73c597; --ok-soft:#173226; --warn:#e2b453; --warn-soft:#352a12; --bad:#ef8585; --bad-soft:#3a1d1d;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111618; --surface:#192124; --ink:#e4ebeb; --muted:#97a5a9; --line:#2a3438;
+  --accent:#86a8ef; --accent-ink:#0f1830; --accent-soft:#1f2b45;
+  --ok:#73c597; --ok-soft:#173226; --warn:#e2b453; --warn-soft:#352a12; --bad:#ef8585; --bad-soft:#3a1d1d;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.35); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 64px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:8px 16px}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,5vw,34px);margin:0;line-height:1.1;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.sync{font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:4px;padding-block:8px;border-bottom:1px solid var(--line);overflow-x:auto}
+nav.tabs button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);font:600 14px var(--f-body);padding:8px 12px;border-radius:8px;cursor:pointer;display:flex;gap:6px;align-items:center}
+nav.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+nav.tabs .n{font:500 12px var(--f-mono);opacity:.8}
+section.panel{padding-top:18px;display:flex;flex-direction:column;gap:18px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar input[type=search],.bar input[type=text]{flex:1 1 200px;min-width:0}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+textarea{resize:vertical;min-height:120px;line-height:1.45}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 14px var(--f-body);padding:8px 13px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:6px 8px}
+.btn.ghost:hover{color:var(--ink);background:var(--accent-soft)}
+.btn.danger{color:var(--bad)}
+.btn.small{padding:5px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.shelf{display:flex;flex-direction:column;gap:6px}
+.shelf h2,.h2{font:700 12px var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0;display:flex;gap:8px;align-items:baseline}
+.shelf h2 .n{font:500 12px var(--f-mono);letter-spacing:0}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .name{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.row .qty{font:400 13px var(--f-mono);color:var(--muted);margin-left:6px}
+.row .meta{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.row .acts{display:flex;gap:2px}
+.chip{display:inline-flex;align-items:center;gap:4px;font:500 12px var(--f-body);padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.mute{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.chip.mono{font-family:var(--f-mono)}
+.soon{display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-radius:12px;background:var(--warn-soft)}
+.soon strong{font-weight:700;color:var(--warn);margin-right:4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;font:inherit;color:inherit;min-width:0}
+.card:hover{border-color:var(--accent)}
+.card h3{font-family:var(--f-display);font-weight:400;font-size:19px;margin:0;line-height:1.2}
+.card .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ok)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:28px 20px;text-align:center;color:var(--muted)}
+.empty h3{font-family:var(--f-display);font-weight:400;color:var(--ink);margin:0 0 6px;font-size:20px}
+.cook-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-top:1px solid var(--line)}
+.cook-row:first-child{border-top:0}
+.cook-row .t{font-family:var(--f-display);font-size:17px;cursor:pointer;background:none;border:0;padding:0;color:var(--ink);text-align:left}
+.cook-row .t:hover{color:var(--accent)}
+.cook-row .miss{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.shop-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border-top:1px solid var(--line)}
+.shop-row:first-child{border-top:0}
+.shop-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.shop-row.done .name{text-decoration:line-through;color:var(--muted)}
+.shop-row .from{font-size:12px;color:var(--muted)}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,20,25,.45);z-index:20;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:max(24px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);width:100%;max-width:620px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.sheet h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0;line-height:1.15}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font:600 13px var(--f-body);color:var(--muted)}
+.field .hint{font-size:12px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.sheet .foot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;padding-top:4px}
+.sheet .foot .r{display:flex;gap:8px;margin-left:auto}
+.ing{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.ing li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;align-items:baseline}
+.ing .mk{font:600 13px var(--f-mono);text-align:center}
+.ing .have .mk{color:var(--ok)} .ing .need .mk{color:var(--bad)} .ing .opt{color:var(--muted)} .ing .opt .mk{color:var(--muted)}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;max-width:65ch}
+.notes{color:var(--muted);font-size:14px;white-space:pre-wrap;margin:0}
+.scan-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:12px;border-top:1px solid var(--line)}
+.scan-row:first-child{border-top:0}
+.scan-row .fields{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px}
+.scan-row .fields .wide{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.scan-row input[type=checkbox]{width:18px;height:18px;margin-top:10px;accent-color:var(--accent)}
+.scan-row.off .fields{opacity:.45}
+.scan-row input,.scan-row select{padding:7px 9px;font-size:14px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-2px;margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+@media (max-width:520px){.scan-row .fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.scan-row .fields .nm{grid-column:1/-1}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-weight:600;font-size:14px;z-index:40;box-shadow:var(--shadow)}
+.note-banner{padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+@media (max-width:520px){.row{grid-template-columns:minmax(0,1fr) auto}.row .meta{grid-column:1/-1;justify-content:flex-start;order:3}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .16s ease-out}@keyframes up{from{transform:translateY(8px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Pantry &amp; Recipe Book</h1>
+      <p class="sub">What's on the shelves, what you can cook with it, and what to buy next.</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center"><span class="sync" id="sync">Connecting…</span><button class="btn small" id="household">Household</button></div>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="pantry" aria-selected="true">Pantry <span class="n" id="n-pantry"></span></button>
+    <button role="tab" data-tab="cook" aria-selected="false">What can I make <span class="n" id="n-cook"></span></button>
+    <button role="tab" data-tab="recipes" aria-selected="false">Recipes <span class="n" id="n-recipes"></span></button>
+    <button role="tab" data-tab="shop" aria-selected="false">Shopping list <span class="n" id="n-shop"></span></button>
+  </nav>
+  <div id="allergy" class="bar" style="padding-top:12px"></div>
+  <div id="banner"></div>
+  <section class="panel" id="panel"></section>
+</div>
+<div id="sheet-root"></div>
+<input type="file" id="scan-file" accept="image/*" capture="environment" multiple hidden>
+
+<script>
+(function(){
+const LOCS=["Fridge","Freezer","Pantry","Spice rack"];
+const STAPLES=new Set(["water","ice"]);
+const S={tab:"pantry",sample:null,canScan:false,settings:{allergens:[],stores:[]},pantry:[],recipes:[],shop:[],q:"",rq:"",tag:"",ready:false,db:null,readOnly:false,loaded:{pantry:false,recipes:false,shop:false}};
+try{const t=localStorage.getItem("prb-tab");if(t)S.tab=t}catch(e){}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- matching ---------- */
+function sing(w){if(w.length>4&&w.endsWith("ies"))return w.slice(0,-3)+"y";if(w.length>4&&/(oes|ches|shes|xes)$/.test(w))return w.slice(0,-2);if(w.length>3&&w.endsWith("s")&&!/(ss|us)$/.test(w))return w.slice(0,-1);return w}
+function norm(s){return String(s||"").toLowerCase().replace(/\(.*?\)/g," ").replace(/[^a-z\s]/g," ").split(/\s+/).filter(Boolean).map(sing)}
+function contains(hay,needle){if(!needle.length)return false;for(let i=0;i+needle.length<=hay.length;i++){let ok=true;for(let j=0;j<needle.length;j++)if(hay[i+j]!==needle[j]){ok=false;break}if(ok)return true}return false}
+function isOptional(line){return /\boptional\b/i.test(line)||/^\s*~/.test(line)||/\bto taste\b/i.test(line)&&/\b(salt|pepper)\b/i.test(line)}
+function matchLine(line){const toks=norm(line);if(toks.some(t=>STAPLES.has(t))&&toks.length<=3)return {staple:true};let best=null,bl=0;for(const p of S.pantry){const n=norm(p.name);if(n.length>bl&&contains(toks,n)){best=p;bl=n.length}}return best}
+function analyze(r){const lines=(r.ingredients||[]).filter(l=>l.trim());const out=lines.map(l=>{const m=matchLine(l);return {line:l,opt:isOptional(l),have:!!m,item:m&&!m.staple?m:null}});const req=out.filter(x=>!x.opt);const missing=req.filter(x=>!x.have);return {lines:out,req:req.length,have:req.length-missing.length,missing}}
+const ALLERGEN_WORDS={peanut:["peanut","peanut butter","groundnut","satay","goober"],egg:["egg","egg white","egg yolk","mayonnaise","mayo","meringue","aioli","egg noodle","eggnog","custard","hollandaise"],lentil:["lentil","dal","dhal","daal","masoor","toor dal"],beans:["bean","refried","frijole"],peas:["pea","split pea","snap pea","snow pea","pea protein","petit pois"],"tree nut":["almond","cashew","walnut","pecan","pistachio","hazelnut"],milk:["milk","butter","cheese","cream","yogurt"],wheat:["flour","wheat","bread","pasta"],soy:["soy","tofu","edamame"],shellfish:["shrimp","prawn","crab","lobster","crawfish","crayfish","clam","oyster","mussel","scallop","langostino"],pork:["pork","bacon","ham","prosciutto","pancetta","chorizo","pepperoni","salami","lard","sausage","bratwurst","hot dog","pork rind","carnitas"],catfish:["catfish"],fish:["salmon","tuna","cod","anchov"],sesame:["sesame","tahini"]};
+function allergenWords(a){const k=a.toLowerCase().trim();return (ALLERGEN_WORDS[k]||ALLERGEN_WORDS[k.replace(/s$/,"")]||[k]).map(norm)}
+const ALLERGEN_EXCEPT={pork:["turkey bacon","turkey ham","turkey sausage","chicken sausage","beef sausage","turkey pepperoni","beef hot dog","turkey hot dog","beef bacon","beef salami","hamburger","graham"],beans:["green bean","string bean","snap bean","wax bean","french bean","haricot vert","garbanzo bean","chickpea","coffee bean","vanilla bean","jelly bean","cocoa bean","cacao bean","soybean","soy bean"]};
+function stripPhrases(toks,phrases){let t=toks.slice();for(const ph of phrases.map(norm))for(let i=0;i+ph.length<=t.length;i++){let ok=true;for(let j=0;j<ph.length;j++)if(t[i+j]!==ph[j]){ok=false;break}if(ok){t.splice(i,ph.length,"_");}}return t}
+function allergensIn(text){const toks=norm(text);return (S.settings.allergens||[]).filter(a=>{const k=a.toLowerCase().trim();const t=ALLERGEN_EXCEPT[k]?stripPhrases(toks,ALLERGEN_EXCEPT[k]):toks;return allergenWords(a).some(w=>contains(t,w))})}
+function recipeAllergens(r){const set=new Set();for(const l of (r.ingredients||[]))for(const a of allergensIn(l))set.add(a);return [...set]}
+const allergyChips=list=>list.map(a=>`<span class="chip bad">⚠ Contains ${esc(a)}</span>`).join("");
+function cleanName(line){return line.replace(/\(.*?\)/g,"").replace(/^[\s~\-•*]*/,"").replace(/^[\d\s\/.,½¼¾⅓⅔-]+/,"").replace(/^(cups?|tbsp|tsp|tablespoons?|teaspoons?|oz|ounces?|lbs?|pounds?|g|grams?|kg|ml|l|liters?|cans?|cloves?|pinch|handful|bunch|sticks?|slices?|pieces?|large|medium|small|packages?|jars?)\b\.?\s*(of\s+)?/i,"").replace(/,.*$/,"").replace(/\boptional\b/i,"").trim()||line.trim()}
+
+/* ---------- dates ---------- */
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+function daysUntil(iso){if(!iso)return null;const d=new Date(iso+"T00:00:00");if(isNaN(d))return null;return Math.round((d-today())/864e5)}
+function expiryChip(p){const n=daysUntil(p.expires);if(n===null)return "";if(n<0)return `<span class="chip bad">Expired ${-n}d ago</span>`;if(n===0)return `<span class="chip bad">Use today</span>`;if(n<=5)return `<span class="chip warn">Use in ${n}d</span>`;return `<span class="chip mute mono">${esc(fmtDate(p.expires))}</span>`}
+function fmtDate(iso){const d=new Date(iso+"T00:00:00");return isNaN(d)?iso:d.toLocaleDateString(undefined,{month:"short",day:"numeric"})}
+
+/* ---------- ui helpers ---------- */
+let toastT;function toast(msg){let el=$(".toast");if(!el){el=document.createElement("div");el.className="toast";el.setAttribute("role","status");document.body.appendChild(el)}el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2200)}
+async function write(fn,okMsg){if(!S.db){toast("Saving isn't available right now");return false}if(S.readOnly){toast("You can view this page but not change it");return false}try{await fn();if(okMsg)toast(okMsg);return true}catch(e){if(e&&e.code==="invalid_argument"&&/permission|level|write/i.test(e.message||"")){S.readOnly=true;toast("You can view this page but not change it")}else if(e&&e.code==="quota_exceeded")toast("Storage is full. Delete some old items and try again.");else toast("That didn't save. Check your connection and try again.");console.error(e);return false}}
+const col=n=>S.db.collection(n);
+function closeSheet(){$("#sheet-root").innerHTML=""}
+function openSheet(html,bind){const root=$("#sheet-root");root.innerHTML=`<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;$("#scrim").addEventListener("click",e=>{if(e.target.id==="scrim")closeSheet()});bind&&bind(root);const f=root.querySelector("input,textarea,select,button");f&&f.focus()}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
+function confirmBtn(btn,label,run){if(btn.dataset.armed){run();return}btn.dataset.armed="1";const old=btn.textContent;btn.textContent=label;setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.textContent=old}},3000)}
+
+/* ---------- tabs ---------- */
+$("#tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-tab]");if(!b)return;S.tab=b.dataset.tab;try{localStorage.setItem("prb-tab",S.tab)}catch(e){}render()});
+
+function render(){
+  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===S.tab)));
+  const ready=S.recipes.map(analyze).filter(a=>a.req>0&&a.missing.length===0).length;
+  $("#n-pantry").textContent=S.pantry.length||"";$("#n-recipes").textContent=S.recipes.length||"";
+  $("#n-cook").textContent=ready?ready+" ready":"";$("#n-shop").textContent=S.shop.filter(x=>!x.done).length||"";
+  const al=S.settings.allergens||[];$("#allergy").innerHTML=al.length?`<span class="h2">Allergies</span>${al.map(a=>`<span class="chip bad">${esc(a)}</span>`).join("")}<span style="font-size:12px;color:var(--muted)">Flagged from ingredient names. Always check labels.</span>`:"";
+  const ex=[...S.pantry,...S.recipes,...S.shop].filter(x=>x.example).length;
+  $("#banner").innerHTML=ex&&!S.readOnly?`<div class="note-banner" style="margin-top:14px"><span>Items marked <b>Example</b> are sample data so you can see how it works.</span><button class="btn small" id="clear-ex">Remove examples</button></div>`:"";
+  const ce=$("#clear-ex");ce&&ce.addEventListener("click",()=>confirmBtn(ce,"Tap again to remove",clearExamples));
+  const p=$("#panel");
+  ({pantry:renderPantry,cook:renderCook,recipes:renderRecipes,shop:renderShop})[S.tab](p);
+}
+async function clearExamples(){const jobs=[];for(const [c,arr] of [["pantry",S.pantry],["recipes",S.recipes],["shop",S.shop]])for(const x of arr)if(x.example)jobs.push(col(c).doc(x.id).delete());await write(()=>Promise.all(jobs),"Examples removed")}
+
+const exTag=x=>x.example?`<span class="chip mute">Example</span>`:"";
+
+/* ---------- pantry ---------- */
+function renderPantry(p){
+  if(!S.loaded.pantry){p.innerHTML=`<div class="empty"><h3>Loading your shelves</h3>Your pantry items will appear here.</div>`;return}
+  const q=norm(S.q).join(" ");
+  const items=S.pantry.filter(x=>!q||norm(x.name).join(" ").includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+  const soon=S.pantry.filter(x=>{const n=daysUntil(x.expires);return n!==null&&n<=5}).sort((a,b)=>daysUntil(a.expires)-daysUntil(b.expires));
+  let h=`<div class="bar"><input type="search" id="pq" placeholder="Search the pantry" value="${esc(S.q)}" aria-label="Search the pantry">${S.canScan?`<button class="btn" id="scan-item">Scan with camera</button>`:""}<button class="btn primary" id="add-item">Add item</button></div>`;
+  if(soon.length)h+=`<div class="soon"><strong>Use soon</strong>${soon.map(x=>`<span class="chip ${daysUntil(x.expires)<=0?"bad":"warn"}">${esc(x.name)} · ${daysUntil(x.expires)<0?"expired":daysUntil(x.expires)===0?"today":daysUntil(x.expires)+"d"}</span>`).join("")}</div>`;
+  if(!S.pantry.length){h+=`<div class="empty"><h3>The shelves are empty</h3>Add what you have in the fridge, freezer and cupboards. Recipes will light up as you go.</div>`;p.innerHTML=h;bindPantry(p);return}
+  const locs=[...LOCS,...new Set(items.map(x=>x.location).filter(l=>l&&!LOCS.includes(l)))];
+  for(const L of locs){const xs=items.filter(x=>(x.location||"Pantry")===L);if(!xs.length)continue;
+    h+=`<div class="shelf"><h2>${esc(L)} <span class="n">${xs.length}</span></h2><div class="list">${xs.map(x=>`
+      <div class="row" data-id="${esc(x.id)}">
+        <div class="name">${esc(x.name)}${x.qty?`<span class="qty">${esc(x.qty)}</span>`:""}</div>
+        <div class="meta">${allergyChips(allergensIn(x.name))}${x.store?`<span class="chip mute">${esc(x.store)}</span>`:""}${x.low?`<span class="chip warn">Running low</span>`:""}${expiryChip(x)}${exTag(x)}</div>
+        <div class="acts"><button class="btn ghost small" data-act="low" title="${x.low?"No longer low":"Mark running low and add to shopping list"}">${x.low?"Restocked":"Low"}</button><button class="btn ghost small" data-act="edit">Edit</button><button class="btn ghost small danger" data-act="used" aria-label="Used up ${esc(x.name)}">Used up</button></div>
+      </div>`).join("")}</div></div>`}
+  if(!items.length)h+=`<div class="empty">Nothing on the shelves matches “${esc(S.q)}”.</div>`;
+  p.innerHTML=h;bindPantry(p);
+}
+function bindPantry(p){
+  const pq=p.querySelector("#pq");if(pq)pq.addEventListener("input",e=>{S.q=e.target.value;const pos=e.target.selectionStart;render();const n=$("#pq");n.focus();n.setSelectionRange(pos,pos)});
+  p.querySelector("#add-item").addEventListener("click",()=>itemSheet());
+  const sc=p.querySelector("#scan-item");sc&&sc.addEventListener("click",()=>$("#scan-file").click());
+  p.querySelectorAll(".row[data-id]").forEach(r=>r.addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;const x=S.pantry.find(i=>i.id===r.dataset.id);if(!x)return;
+    if(b.dataset.act==="edit")itemSheet(x);
+    if(b.dataset.act==="low")toggleLow(x);
+    if(b.dataset.act==="used")confirmBtn(b,"Remove?",()=>usedUp(x));
+  }));
+}
+async function toggleLow(x){const low=!x.low;await write(async()=>{await col("pantry").doc(x.id).update({low,updated:Date.now()});if(low)await addToShop([x.name],"Running low",x.store)},low?`${x.name} added to the shopping list`:`${x.name} marked restocked`)}
+async function usedUp(x){await write(()=>col("pantry").doc(x.id).delete(),`${x.name} removed`)}
+function itemSheet(x){
+  const isNew=!x;x=x||{name:"",qty:"",location:"Pantry",expires:"",low:false};
+  openSheet(`<h2>${isNew?"Add to the pantry":"Edit "+esc(x.name)}</h2>
+    <form id="f" class="grid2" style="display:flex;flex-direction:column;gap:12px">
+      <div class="field"><label for="i-name">Item</label><input id="i-name" required value="${esc(x.name)}" placeholder="e.g. chickpeas" autocomplete="off"><span class="hint">Use the plain name a recipe would use, like “eggs” or “cheddar”.</span></div>
+      <div class="grid2">
+        <div class="field"><label for="i-qty">Amount</label><input id="i-qty" value="${esc(x.qty)}" placeholder="2 cans"></div>
+        <div class="field"><label for="i-loc">Where</label><select id="i-loc">${LOCS.map(l=>`<option${l===(x.location||"Pantry")?" selected":""}>${l}</option>`).join("")}</select></div>
+        <div class="field"><label for="i-exp">Use by</label><input id="i-exp" type="date" value="${esc(x.expires)}"></div>
+        <div class="field"><label for="i-store">Usually buy at</label><select id="i-store">${storeOptions(x.store)}</select></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center"><input id="i-low" type="checkbox" style="width:auto"${x.low?" checked":""}> Running low (adds it to the shopping list)</label>
+      <div class="foot"><button type="button" class="btn ghost" id="cancel">Cancel</button><div class="r"><button class="btn primary" type="submit">${isNew?"Add item":"Save"}</button></div></div>
+    </form>`,root=>{
+      root.querySelector("#cancel").addEventListener("click",closeSheet);
+      root.querySelector("#f").addEventListener("submit",async e=>{e.preventDefault();
+        const d={name:$("#i-name").value.trim(),qty:$("#i-qty").value.trim(),location:$("#i-loc").value,expires:$("#i-exp").value,low:$("#i-low").checked,store:$("#i-store").value,updated:Date.now()};
+        if(!d.name)return;
+        const becameLow=d.low&&!x.low;
+        const ok=await write(async()=>{if(isNew)await col("pantry").add(d);else await col("pantry").doc(x.id).update(d);if(becameLow)await addToShop([d.name],"Running low",d.store)},isNew?`${d.name} added`:"Saved");
+        if(ok)closeSheet()});
+    });
+}
+
+/* ---------- recipes ---------- */
+function allTags(){return [...new Set(S.recipes.flatMap(r=>r.tags||[]))].sort()}
+function renderRecipes(p){
+  if(!S.loaded.recipes){p.innerHTML=`<div class="empty"><h3>Opening the recipe book</h3>Your recipes will appear here.</div>`;return}
+  const q=S.rq.toLowerCase();
+  const rs=S.recipes.filter(r=>(!S.tag||(r.tags||[]).includes(S.tag))&&(!q||(r.title+" "+(r.ingredients||[]).join(" ")+" "+(r.tags||[]).join(" ")).toLowerCase().includes(q))).sort((a,b)=>a.title.localeCompare(b.title));
+  const tags=allTags();
+  let h=`<div class="bar"><input type="search" id="rq" placeholder="Search recipes or ingredients" value="${esc(S.rq)}" aria-label="Search recipes"><button class="btn primary" id="add-recipe">Add recipe</button></div>`;
+  if(tags.length)h+=`<div class="bar">${["",...tags].map(t=>`<button class="chip ${S.tag===t?"":"mute"}" style="cursor:pointer;border:${S.tag===t?"0":""}" data-tag="${esc(t)}">${t?esc(t):"All"}</button>`).join("")}</div>`;
+  if(!S.recipes.length)h+=`<div class="empty"><h3>No recipes yet</h3>Add a favourite with one ingredient per line, and this page will tell you when you have everything for it.</div>`;
+  else if(!rs.length)h+=`<div class="empty">No recipes match.</div>`;
+  else h+=`<div class="cards">${rs.map(recipeCard).join("")}</div>`;
+  p.innerHTML=h;
+  const rqi=p.querySelector("#rq");rqi.addEventListener("input",e=>{S.rq=e.target.value;const pos=e.target.selectionStart;render();const n=$("#rq");n.focus();n.setSelectionRange(pos,pos)});
+  p.querySelector("#add-recipe").addEventListener("click",()=>recipeForm());
+  p.querySelectorAll("[data-tag]").forEach(b=>b.addEventListener("click",()=>{S.tag=b.dataset.tag;render()}));
+  p.querySelectorAll(".card[data-id]").forEach(c=>c.addEventListener("click",()=>recipeView(S.recipes.find(r=>r.id===c.dataset.id))));
+}
+function recipeCard(r){const a=analyze(r);const pct=a.req?Math.round(a.have/a.req*100):0;
+  const al=recipeAllergens(r);const state=al.length?allergyChips(al):a.req&&!a.missing.length?`<span class="chip ok">Ready to cook</span>`:a.req?`<span class="chip ${a.missing.length<=2?"warn":"mute"}">Missing ${a.missing.length}</span>`:"";
+  return `<button class="card" data-id="${esc(r.id)}"><h3>${esc(r.title)}</h3>
+  <div class="line">${state}${r.time?`<span class="chip mute mono">${esc(r.time)} min</span>`:""}${r.servings?`<span class="chip mute mono">serves ${esc(r.servings)}</span>`:""}${exTag(r)}</div>
+  ${a.req?`<div class="meter" aria-label="${a.have} of ${a.req} ingredients on hand"><i style="width:${pct}%"></i></div><div style="font:400 12px var(--f-mono);color:var(--muted)">${a.have}/${a.req} ingredients on hand</div>`:""}
+  ${(r.tags||[]).length?`<div class="line">${r.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>`:""}</button>`}
+function recipeView(r){if(!r)return;const a=analyze(r);
+  openSheet(`<h2>${esc(r.title)}</h2>
+    ${recipeAllergens(r).length?`<div class="soon" style="background:var(--bad-soft);color:var(--bad)"><strong style="color:var(--bad)">Allergy alert</strong> This recipe contains ${esc(recipeAllergens(r).join(", "))}. Swap or skip the flagged lines below.</div>`:""}
+    <div class="bar">${a.req&&!a.missing.length?`<span class="chip ok">You have everything</span>`:a.missing.length?`<span class="chip warn">Missing ${a.missing.length}</span>`:""}${r.time?`<span class="chip mute mono">${esc(r.time)} min</span>`:""}${r.servings?`<span class="chip mute mono">serves ${esc(r.servings)}</span>`:""}${(r.tags||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>
+    <div class="h2">Ingredients</div>
+    <ul class="ing">${a.lines.map(l=>`<li class="${l.opt?"opt":l.have?"have":"need"}"><span class="mk" aria-hidden="true">${l.have?"✓":l.opt?"–":"✗"}</span><span>${esc(l.line)}${allergensIn(l.line).map(a=>` <span class="chip bad">⚠ ${esc(a)}</span>`).join("")}${l.opt&&!l.have?" <span class=\"chip mute\">optional</span>":""}${!l.have&&!l.opt?" <span class=\"chip bad\">need</span>":""}</span></li>`).join("")}</ul>
+    ${(r.steps||[]).length?`<div class="h2">Method</div><ol class="steps">${r.steps.filter(s=>s.trim()).map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:""}
+    ${r.notes?`<div class="h2">Notes</div><p class="notes">${esc(r.notes)}</p>`:""}
+    <div class="foot"><button class="btn ghost danger" id="del">Delete</button><div class="r"><button class="btn" id="edit">Edit</button>${a.missing.length?`<button class="btn primary" id="tolist">Add missing to list</button>`:`<button class="btn primary" id="close">Close</button>`}</div></div>`,root=>{
+    const d=root.querySelector("#del");d.addEventListener("click",()=>confirmBtn(d,"Tap again to delete",async()=>{if(await write(()=>col("recipes").doc(r.id).delete(),"Recipe deleted"))closeSheet()}));
+    root.querySelector("#edit").addEventListener("click",()=>recipeForm(r));
+    const c=root.querySelector("#close");c&&c.addEventListener("click",closeSheet);
+    const t=root.querySelector("#tolist");t&&t.addEventListener("click",async()=>{const n=await addMissing(r);if(n!==false)closeSheet()});
+  })}
+async function addMissing(r){const a=analyze(r);const names=a.missing.map(m=>cleanName(m.line));return write(()=>addToShop(names,r.title),`Added ${names.length} to the shopping list`)}
+function recipeForm(r){const isNew=!r;r=r||{title:"",servings:"",time:"",tags:[],ingredients:[],steps:[],notes:""};
+  openSheet(`<h2>${isNew?"Add a recipe":"Edit recipe"}</h2>
+   <form id="rf" style="display:flex;flex-direction:column;gap:12px">
+    <div class="field"><label for="r-title">Name</label><input id="r-title" required value="${esc(r.title)}" placeholder="e.g. Weeknight chili"></div>
+    <div class="grid2">
+      <div class="field"><label for="r-time">Time (minutes)</label><input id="r-time" inputmode="numeric" value="${esc(r.time)}" placeholder="40"></div>
+      <div class="field"><label for="r-serv">Serves</label><input id="r-serv" inputmode="numeric" value="${esc(r.servings)}" placeholder="4"></div>
+    </div>
+    <div class="field"><label for="r-tags">Tags</label><input id="r-tags" value="${esc((r.tags||[]).join(", "))}" placeholder="dinner, vegetarian, quick"><span class="hint">Separate with commas.</span></div>
+    <div class="field"><label for="r-ing">Ingredients</label><textarea id="r-ing" placeholder="1 lb ground beef&#10;1 can kidney beans&#10;1 onion&#10;sour cream (optional)">${esc((r.ingredients||[]).join("\n"))}</textarea><span class="hint">One per line. Add “(optional)” to anything you can skip. Salt, pepper “to taste” and water count as always on hand.</span></div>
+    <div class="field"><label for="r-steps">Method</label><textarea id="r-steps" placeholder="One step per line">${esc((r.steps||[]).join("\n"))}</textarea></div>
+    <div class="field"><label for="r-notes">Notes or source</label><textarea id="r-notes" style="min-height:70px">${esc(r.notes||"")}</textarea></div>
+    <div class="foot"><button type="button" class="btn ghost" id="cancel">Cancel</button><div class="r"><button class="btn primary" type="submit">${isNew?"Add recipe":"Save"}</button></div></div>
+   </form>`,root=>{
+    root.querySelector("#cancel").addEventListener("click",()=>isNew?closeSheet():recipeView(S.recipes.find(x=>x.id===r.id)||r));
+    root.querySelector("#rf").addEventListener("submit",async e=>{e.preventDefault();
+      const lines=id=>$(id).value.split("\n").map(s=>s.trim()).filter(Boolean);
+      const d={title:$("#r-title").value.trim(),time:$("#r-time").value.trim(),servings:$("#r-serv").value.trim(),tags:$("#r-tags").value.split(",").map(s=>s.trim().toLowerCase()).filter(Boolean),ingredients:lines("#r-ing"),steps:lines("#r-steps"),notes:$("#r-notes").value.trim(),updated:Date.now()};
+      if(!d.title)return;
+      let id=r.id;
+      const ok=await write(async()=>{if(isNew){const ref=col("recipes").doc();id=ref.id;await ref.set(d)}else await col("recipes").doc(r.id).update(d)},isNew?"Recipe added":"Saved");
+      if(ok)setTimeout(()=>recipeView(S.recipes.find(x=>x.id===id)||{...d,id}),0)});
+  })}
+
+/* ---------- cook ---------- */
+function renderCook(p){
+  if(!S.loaded.recipes||!S.loaded.pantry){p.innerHTML=`<div class="empty"><h3>Checking the shelves</h3>Recipes you can make will appear here.</div>`;return}
+  if(!S.recipes.length){p.innerHTML=`<div class="empty"><h3>Nothing to match yet</h3>Add a few recipes and your pantry items, and this tab sorts them by what you can cook right now.</div>`;return}
+  const rs=S.recipes.map(r=>({r,a:analyze(r)})).filter(x=>x.a.req).sort((x,y)=>x.a.missing.length-y.a.missing.length||y.a.have/y.a.req-x.a.have/x.a.req);
+  rs.forEach(x=>x.al=recipeAllergens(x.r));
+  const groups=[["Ready to cook",x=>!x.al.length&&x.a.missing.length===0],["Missing one or two",x=>!x.al.length&&x.a.missing.length>0&&x.a.missing.length<=2],["Needs a shop",x=>!x.al.length&&x.a.missing.length>2],["Contains an allergen",x=>x.al.length>0]];
+  const useSoon=S.pantry.filter(x=>{const n=daysUntil(x.expires);return n!==null&&n<=5}).map(x=>norm(x.name));
+  let h="";
+  for(const [label,fn] of groups){const xs=rs.filter(fn);if(!xs.length)continue;
+    h+=`<div class="shelf"><h2>${label} <span class="n">${xs.length}</span></h2><div class="list">${xs.map(({r,a,al})=>{
+      const usesSoon=a.lines.filter(l=>l.item&&useSoon.some(n=>n.join(" ")===norm(l.item.name).join(" "))).map(l=>l.item.name);
+      return `<div class="cook-row" data-id="${esc(r.id)}"><div style="min-width:0"><button class="t" data-act="view">${esc(r.title)}</button>
+      <div class="miss">${allergyChips(al)}${a.missing.length?a.missing.map(m=>`<span class="chip bad">${esc(cleanName(m.line))}</span>`).join(""):`<span class="chip ok">All ${a.req} ingredients on hand</span>`}${[...new Set(usesSoon)].map(n=>`<span class="chip warn">Uses up ${esc(n)}</span>`).join("")}${r.time?`<span class="chip mute mono">${esc(r.time)} min</span>`:""}</div></div>
+      ${a.missing.length?`<button class="btn small" data-act="list">Add to list</button>`:`<button class="btn small" data-act="view">Open</button>`}</div>`}).join("")}</div></div>`}
+  p.innerHTML=h;
+  p.querySelectorAll(".cook-row").forEach(row=>row.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const r=S.recipes.find(x=>x.id===row.dataset.id);if(b.dataset.act==="view")recipeView(r);else addMissing(r)}));
+}
+
+/* ---------- shopping ---------- */
+function storeOptions(cur){return [`<option value="">Either store</option>`,...(S.settings.stores||[]).map(st=>`<option${st===cur?" selected":""}>${esc(st)}</option>`)].join("")}
+function storeFor(name){const k=norm(name).join(" ");const p=S.pantry.find(x=>norm(x.name).join(" ")===k);return p&&p.store||""}
+async function addToShop(names,from,store){const have=new Set(S.shop.filter(x=>!x.done).map(x=>norm(x.name).join(" ")));for(const n of names){const k=norm(n).join(" ");if(!k||have.has(k))continue;have.add(k);await col("shop").add({name:n,from:from||"",store:store!==undefined&&names.length===1?store:storeFor(n),done:false,added:Date.now()})}}
+function renderShop(p){
+  if(!S.loaded.shop){p.innerHTML=`<div class="empty"><h3>Loading the list</h3></div>`;return}
+  const xs=[...S.shop].sort((a,b)=>(a.done-b.done)||(a.added||0)-(b.added||0));const done=xs.filter(x=>x.done).length;
+  let h=`<form class="bar" id="sf"><input type="text" id="s-new" placeholder="Add something to buy" aria-label="Add something to buy" autocomplete="off"><select id="s-store" aria-label="Store" style="flex:0 1 150px;width:auto">${storeOptions(S.lastStore||"")}</select><button class="btn primary" type="submit">Add</button></form>`;
+  if(!xs.length)h+=`<div class="empty"><h3>Nothing to buy</h3>Mark pantry items as low, or add a recipe's missing ingredients, and they land here.</div>`;
+  else{const stores=[...(S.settings.stores||[]),""];const extra=[...new Set(xs.map(x=>x.store||"").filter(v=>v&&!stores.includes(v)))];
+    for(const st of [...stores.slice(0,-1),...extra,""]){const g=xs.filter(x=>(x.store||"")===st);if(!g.length)continue;
+    h+=`<div class="shelf"><h2>${st?esc(st):"Either store"} <span class="n">${g.filter(x=>!x.done).length}</span></h2><div class="list">${g.map(x=>`<label class="shop-row${x.done?" done":""}" data-id="${esc(x.id)}"><input type="checkbox"${x.done?" checked":""} aria-label="Got ${esc(x.name)}"><span style="min-width:0"><span class="name">${esc(x.name)}</span>${x.from?` <span class="from">· ${esc(x.from)}</span>`:""} ${exTag(x)}</span><span style="display:flex;gap:2px">${(S.settings.stores||[]).length?`<button type="button" class="btn ghost small" data-act="mv" title="Move to another store">${x.store?"Move":"Pick store"}</button>`:""}<button type="button" class="btn ghost small" data-act="rm" aria-label="Remove ${esc(x.name)}">×</button></span></label>`).join("")}</div></div>`}}
+  if(done)h+=`<div class="bar"><button class="btn primary" id="stock">Put ${done} checked in the pantry</button><button class="btn" id="clear">Clear checked</button></div>`;
+  p.innerHTML=h;
+  p.querySelector("#sf").addEventListener("submit",async e=>{e.preventDefault();const v=$("#s-new").value.trim();if(!v)return;const st=$("#s-store").value;S.lastStore=st;if(await write(()=>addToShop([v],"",st),null)){const n=$("#s-new");if(n){n.value="";n.focus()}}});
+  p.querySelectorAll(".shop-row").forEach(r=>{const x=S.shop.find(i=>i.id===r.dataset.id);
+    r.querySelector("input").addEventListener("change",e=>write(()=>col("shop").doc(x.id).update({done:e.target.checked})));
+    r.querySelector("[data-act=rm]").addEventListener("click",e=>{e.preventDefault();write(()=>col("shop").doc(x.id).delete())});
+    const mv=r.querySelector("[data-act=mv]");mv&&mv.addEventListener("click",e=>{e.preventDefault();const opts=[...(S.settings.stores||[]),""];const next=opts[(opts.indexOf(x.store||"")+1)%opts.length];write(()=>col("shop").doc(x.id).update({store:next}),next?`Moved to ${next}`:"Either store")})});
+  const st=p.querySelector("#stock");st&&st.addEventListener("click",stockChecked);
+  const cl=p.querySelector("#clear");cl&&cl.addEventListener("click",()=>write(()=>Promise.all(S.shop.filter(x=>x.done).map(x=>col("shop").doc(x.id).delete())),"Cleared"));
+}
+async function stockChecked(){const xs=S.shop.filter(x=>x.done);await write(async()=>{for(const x of xs){const k=norm(x.name).join(" ");const ex=S.pantry.find(p=>norm(p.name).join(" ")===k);if(ex)await col("pantry").doc(ex.id).update({low:false,updated:Date.now()});else await col("pantry").add({name:x.name,qty:"",location:"Pantry",expires:"",low:false,store:x.store||"",updated:Date.now()});await col("shop").doc(x.id).delete()}},`${xs.length} put away in the pantry`)}
+
+function householdSheet(){const st=S.settings;openSheet(`<h2>Household</h2>
+  <form id="hf" style="display:flex;flex-direction:column;gap:12px">
+   <div class="field"><label for="h-al">Allergies to flag</label><input id="h-al" value="${esc((st.allergens||[]).join(", "))}" placeholder="peanut, egg"><span class="hint">Also works for foods you avoid. “beans” skips green beans and chickpeas. Recipes and pantry items that mention these get a warning. Common names are expanded, so “egg” also catches mayo and meringue. It reads ingredient names only, so check packaged food labels.</span></div>
+   <div class="field"><label for="h-st">Stores you shop at</label><input id="h-st" value="${esc((st.stores||[]).join(", "))}" placeholder="Walmart, Aldi"><span class="hint">The shopping list is split by these.</span></div>
+   <div class="foot"><button type="button" class="btn ghost" id="cancel">Cancel</button><div class="r"><button class="btn primary" type="submit">Save</button></div></div>
+  </form>`,root=>{root.querySelector("#cancel").addEventListener("click",closeSheet);
+   root.querySelector("#hf").addEventListener("submit",async e=>{e.preventDefault();const sp=v=>v.split(",").map(x=>x.trim()).filter(Boolean);
+    const d={allergens:sp($("#h-al").value).map(x=>x.toLowerCase()),stores:sp($("#h-st").value),updated:Date.now()};
+    if(await write(()=>S.db.doc("settings/household").set(d),"Saved"))closeSheet()})})}
+$("#household").addEventListener("click",householdSheet);
+
+/* ---------- scan ---------- */
+const SCAN_ERR={not_granted:"Claude isn't allowed on this page, so scanning is off. You can still add items by hand.",sampling_disabled:"Claude isn't available on this account, so scanning is off.",rate_limited:"Too many scans in a row. Wait a minute and try again.",image_rejected:"That photo couldn't be read. Try a JPEG or PNG under 20 MB.",invalid_json:"Claude's answer couldn't be read. Try the photo again.",session_expired:"Sign in to claude.ai again, then retry.",refused:"Claude couldn't help with that photo. Try a closer shot of the food."};
+$("#scan-file").addEventListener("change",async e=>{const files=[...e.target.files];e.target.value="";if(!files.length||!S.sample)return;
+  const max=(S.scanLimits&&S.scanLimits.maxCount)||1;const imgs=files.slice(0,max);
+  const ctl=new AbortController();
+  openSheet(`<h2>Reading your photo${imgs.length>1?"s":""}</h2><p style="margin:0;color:var(--muted)"><span class="spin" aria-hidden="true"></span>Claude is picking out the food items. This can take up to a minute.</p>${files.length>max?`<p class="notes">Only the first ${max} photos are used per scan.</p>`:""}<div class="foot"><button class="btn" id="stop">Stop</button></div>`,root=>root.querySelector("#stop").addEventListener("click",()=>{ctl.abort();closeSheet()}));
+  const al=(S.settings.allergens||[]).join(", ")||"none";
+  const prompt=`You are helping a family stock their kitchen inventory. The attached photo${imgs.length>1?"s show":" shows"} groceries or pantry items (packages, produce, cans, jars, a fridge shelf, or a receipt).
+List every distinct food item you can identify. Today is ${new Date().toISOString().slice(0,10)}.
+For each item give:
+- "name": the plain generic ingredient name a recipe would use, lowercase, no brand (e.g. "cheddar", "black beans", "whole milk", "spaghetti"). Keep a short descriptor only when it matters for cooking.
+- "qty": the amount you can see (e.g. "2 cans", "1 lb", "12 ct", "1 jar"); "" if unclear.
+- "location": one of "Fridge", "Freezer", "Pantry", "Spice rack" — where it is normally stored once opened or bought.
+- "expires": a printed use-by/best-by date in YYYY-MM-DD only if you can actually read one; otherwise "".
+- "allergens": from the household avoid list (${al}), the ones this item contains or "may contain" according to its readable label or obvious nature; [] if none or unreadable.
+- "confidence": "high" or "low".
+Reply with only a JSON array, e.g. [{"name":"whole milk","qty":"1 gal","location":"Fridge","expires":"2026-10-21","allergens":[],"confidence":"high"}]. Reply [] if no food is visible.`;
+  let items;
+  try{items=await S.sample.json(prompt,{images:imgs,signal:ctl.signal})}
+  catch(err){if(err&&err.code==="cancelled")return;if(err&&["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed","images_unavailable"].includes(err.code)){S.canScan=false;render()}
+    openSheet(`<h2>Scan didn't work</h2><p style="margin:0">${esc(SCAN_ERR[err&&err.code]||"Something went wrong reaching Claude. Try again in a moment.")}</p><div class="foot"><div class="r"><button class="btn primary" id="ok">Close</button></div></div>`,r=>r.querySelector("#ok").addEventListener("click",closeSheet));return}
+  if(!$("#sheet-root").firstChild)return; // user closed
+  items=(Array.isArray(items)?items:[]).filter(x=>x&&typeof x.name==="string"&&x.name.trim()).map(x=>({name:String(x.name).trim(),qty:String(x.qty||"").trim(),location:LOCS.includes(x.location)?x.location:"Pantry",expires:/^\d{4}-\d{2}-\d{2}$/.test(String(x.expires||""))?x.expires:"",allergens:Array.isArray(x.allergens)?x.allergens.map(String):[],low:x.confidence==="low",on:true}));
+  scanReview(items);
+});
+function scanReview(items){
+  if(!items.length){openSheet(`<h2>No food found</h2><p style="margin:0">Claude couldn't pick out any items in that photo. Try closer, with labels facing the camera and good light.</p><div class="foot"><div class="r"><button class="btn" id="ok">Close</button><button class="btn primary" id="again">Take another</button></div></div>`,r=>{r.querySelector("#ok").addEventListener("click",closeSheet);r.querySelector("#again").addEventListener("click",()=>{closeSheet();$("#scan-file").click()})});return}
+  const existing=x=>S.pantry.find(p=>norm(p.name).join(" ")===norm(x.name).join(" "));
+  const rows=items.map((x,i)=>{const ex=existing(x);const warn=[...new Set([...x.allergens.map(a=>a.toLowerCase()),...allergensIn(x.name)])];
+    return `<div class="scan-row" data-i="${i}"><input type="checkbox" checked aria-label="Add ${esc(x.name)}">
+    <div class="fields"><input class="nm" data-f="name" value="${esc(x.name)}" aria-label="Item name"><input data-f="qty" value="${esc(x.qty)}" placeholder="Amount" aria-label="Amount">
+    <select data-f="location" aria-label="Where">${LOCS.map(l=>`<option${l===x.location?" selected":""}>${l}</option>`).join("")}</select><input data-f="expires" type="date" value="${esc(x.expires)}" aria-label="Use by">
+    <div class="wide">${allergyChips(warn)}${ex?`<span class="chip">Already in ${esc(ex.location||"Pantry")}, will update it</span>`:""}${x.low?`<span class="chip warn">Not sure, check the name</span>`:""}</div></div></div>`}).join("");
+  openSheet(`<h2>Found ${items.length} item${items.length>1?"s":""}</h2><p style="margin:0;color:var(--muted);font-size:14px">Check the names and amounts, untick anything wrong, then add.</p>
+    <div class="list">${rows}</div>
+    <div class="foot"><button class="btn ghost" id="cancel">Cancel</button><div class="r"><button class="btn primary" id="go">Add to pantry</button></div></div>`,root=>{
+    const sync=()=>{const n=root.querySelectorAll(".scan-row input[type=checkbox]:checked").length;const g=root.querySelector("#go");g.textContent=n?`Add ${n} to pantry`:"Nothing selected";g.disabled=!n};
+    root.querySelectorAll(".scan-row").forEach(r=>r.querySelector("input[type=checkbox]").addEventListener("change",e=>{r.classList.toggle("off",!e.target.checked);sync()}));sync();
+    root.querySelector("#cancel").addEventListener("click",closeSheet);
+    root.querySelector("#go").addEventListener("click",async()=>{
+      const picked=[...root.querySelectorAll(".scan-row")].filter(r=>r.querySelector("input[type=checkbox]").checked).map(r=>{const v=f=>r.querySelector(`[data-f=${f}]`).value.trim();return {name:v("name"),qty:v("qty"),location:v("location"),expires:v("expires")}}).filter(x=>x.name);
+      const ok=await write(async()=>{for(const x of picked){const ex=existing(x);const d={...x,updated:Date.now()};if(ex)await col("pantry").doc(ex.id).update({...d,name:ex.name,low:false,expires:x.expires||ex.expires||"",qty:x.qty||ex.qty||""});else await col("pantry").add({...d,low:false,store:storeFor(x.name)})}},`${picked.length} item${picked.length>1?"s":""} added`);
+      if(ok)closeSheet()});
+  })}
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  const db=window.claude&&window.claude.use?await window.claude.use("db"):null;
+  if(!db){$("#sync").textContent="Read only";S.readOnly=true;S.loaded={pantry:true,recipes:true,shop:true};$("#banner").innerHTML=`<div class="note-banner" style="margin-top:14px">Saved data isn't available in this view. Open the page signed in to claude.ai to see and edit your pantry.</div>`;render();return}
+  S.db=db;
+  (async()=>{try{const sm=await window.claude.use("sample");if(!sm)return;const lim=await sm.limits().catch(()=>null);if(lim&&lim.images){S.sample=sm;S.scanLimits=lim.images;S.canScan=!S.readOnly;$("#scan-file").accept=lim.images.mediaTypes.join(",");render()}}catch(e){}})();
+  try{const u=await window.claude.use("user");if(u&&typeof u.can==="function"){const c=await u.can("data.write");if(c===false)S.readOnly=true}}catch(e){}
+  const mark=()=>{$("#sync").textContent=S.readOnly?"View only":"Saved";};
+  const sub=(name)=>col(name).onSnapshot(snap=>{S[name]=snap.docs.map(d=>({id:d.id,...d.data()}));S.loaded[name]=true;mark();
+      render()},
+    e=>{$("#sync").textContent="Offline";console.error(e)});
+  sub("pantry");sub("recipes");sub("shop");
+  db.doc("settings/household").onSnapshot(d=>{S.settings=d.exists?{allergens:[],stores:[],...d.data()}:{allergens:[],stores:[]};render()},e=>console.error(e));
+})();
+})();
+</script>
+
+</body></html>

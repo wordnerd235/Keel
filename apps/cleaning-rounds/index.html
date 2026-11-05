@@ -1,0 +1,415 @@
+<!doctype html><html><head><meta charset=utf8><script src="../../assets/app-bridge.js" data-app="cleaning-rounds"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cleaning Rounds</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a chore chart. Summary strip, then a ranked "up next" list or a room-by-room board; each chore carries a freshness bar from last clean to next due. */
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --sunk:#e7eeec; --line:#d3dedb;
+  --fg:#17302d; --muted:#5b716d;
+  --accent:#16707a; --accent-fg:#ffffff; --accent-soft:#d6ecec;
+  --ok:#3c8a55; --warn:#b7791f; --late:#c2412d; --late-soft:#f8e1dc; --warn-soft:#f6ead2;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1a19; --surface:#162523; --sunk:#1d2f2c; --line:#2b403c;
+  --fg:#e3eeeb; --muted:#93aaa5;
+  --accent:#4fb8c2; --accent-fg:#06201f; --accent-soft:#1c3a3b;
+  --ok:#6cc488; --warn:#e2a948; --late:#f07a63; --late-soft:#3a201b; --warn-soft:#352a17;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1a19; --surface:#162523; --sunk:#1d2f2c; --line:#2b403c;
+  --fg:#e3eeeb; --muted:#93aaa5;
+  --accent:#4fb8c2; --accent-fg:#06201f; --accent-soft:#1c3a3b;
+  --ok:#6cc488; --warn:#e2a948; --late:#f07a63; --late-soft:#3a201b; --warn-soft:#352a17;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:820px;margin:0 auto;padding-block:20px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);font-weight:700;font-size:2rem;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:1.05rem;margin:0}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.date{font-family:var(--mono);font-size:.8rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-weight:600;font-size:.9rem}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--late);border-color:var(--late)}
+.btn:disabled{opacity:.5;cursor:default}
+
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.stat{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--display);font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stat.late b{color:var(--late)} .stat.today b{color:var(--warn)}
+@media (max-width:520px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:10px;width:fit-content;max-width:100%}
+.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-weight:600;font-size:.9rem;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+.group{display:flex;flex-direction:column;gap:8px}
+.ghead{display:flex;align-items:baseline;gap:8px}
+.ghead .count{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.ghead .mins{margin-left:auto;font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.chore{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid var(--line)}
+.chore:first-child{border-top:0}
+.done{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;padding:0;transition:border-color .15s,background .15s}
+.done svg{width:15px;height:15px;stroke:var(--muted);opacity:.35}
+.done:hover{border-color:var(--ok)} .done:hover svg{stroke:var(--ok);opacity:1}
+.done.flash{background:var(--ok);border-color:var(--ok)} .done.flash svg{stroke:#fff;opacity:1}
+.cbody{min-width:0;display:flex;flex-direction:column;gap:5px}
+.cname{font-weight:600;border:0;background:none;padding:0;text-align:left;overflow-wrap:anywhere}
+.cname:hover{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.chip{background:var(--sunk);border-radius:99px;padding:1px 8px;font-size:.75rem;color:var(--fg)}
+.fresh{height:4px;border-radius:2px;background:var(--sunk);overflow:hidden;max-width:220px}
+.fresh i{display:block;height:100%;background:var(--ok);border-radius:2px}
+.fresh.warn i{background:var(--warn)} .fresh.late i{background:var(--late)}
+.due{font-family:var(--mono);font-size:.8rem;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.due.late{color:var(--late)} .due.today{color:var(--warn)} .due.soon{color:var(--fg)} .due.ok{color:var(--muted)}
+.more{border:0;background:none;color:var(--accent);font-weight:600;padding:4px 0;font-size:.9rem;align-self:flex-start}
+
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:14px}
+.room{display:flex;flex-direction:column;gap:8px}
+.room .ghead button{border:0;background:none;color:var(--muted);font-size:.8rem;padding:0}
+.room .list .chore{grid-template-columns:auto minmax(0,1fr) auto}
+.addroom{display:flex;gap:8px;flex-wrap:wrap}
+.addroom input{flex:1;min-width:0}
+
+input,select{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+
+.empty,.notice{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:22px;color:var(--muted);text-align:left}
+.empty h2{color:var(--fg);margin-bottom:6px}
+.notice{border-style:solid;background:var(--warn-soft);color:var(--fg)}
+
+.scrim{position:fixed;inset:0;background:rgb(10 20 18 / .45);display:grid;place-items:end center;z-index:10;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.sheet{background:var(--surface);width:min(520px,100%);border-radius:16px 16px 0 0;padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;max-height:92vh;overflow:auto}
+@media (min-width:620px){.scrim{place-items:center}.sheet{border-radius:16px;padding:22px}}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.every{display:grid;grid-template-columns:5em 1fr;gap:8px}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.presets button{border:1px solid var(--line);background:var(--sunk);border-radius:99px;padding:3px 10px;font-size:.8rem}
+.presets button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.actions .spacer{flex:1}
+.hist{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:10px;display:flex;gap:14px;align-items:center;z-index:20;max-width:calc(100% - 32px);font-size:.9rem}
+.toast button{border:0;background:none;color:var(--accent-soft);font-weight:700;padding:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="date" id="today"></div>
+      <h1>Cleaning Rounds</h1>
+    </div>
+    <button class="btn primary" id="addChore" type="button">Add chore</button>
+  </header>
+
+  <section class="summary" aria-label="Summary">
+    <div class="stat late"><b id="sLate">–</b><span>Overdue</span></div>
+    <div class="stat today"><b id="sToday">–</b><span>Due today</span></div>
+    <div class="stat"><b id="sWeek">–</b><span>Next 7 days</span></div>
+    <div class="stat"><b id="sMins">–</b><span>Min to catch up</span></div>
+  </section>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <div class="toolbar">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabNext" aria-selected="true" type="button">Up next</button>
+      <button role="tab" id="tabRooms" aria-selected="false" type="button">By room</button>
+    </div>
+  </div>
+
+  <main id="view"></main>
+</div>
+
+<div id="sheetHost"></div>
+<div id="toastHost"></div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const DAY = 864e5;
+  const dayNum = d => Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) / DAY);
+  const isoToNum = s => { const [y,m,d] = s.split("-").map(Number); return Math.floor(Date.UTC(y, m-1, d) / DAY); };
+  const numToIso = n => new Date(n * DAY).toISOString().slice(0, 10);
+  const TODAY = dayNum(new Date());
+
+  let db = null, readOnly = false, loaded = { rooms: false, chores: false };
+  let rooms = [], chores = [];
+  let tab = "next", showLater = false, toastTimer = null;
+  try { const t = localStorage.getItem("cr-tab"); if (t === "rooms") tab = "rooms"; } catch {}
+
+  $("#today").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+  const everyLabel = d => {
+    if (d === 1) return "daily";
+    if (d % 365 === 0) return d === 365 ? "yearly" : `every ${d/365} yr`;
+    if (d % 30 === 0) return d === 30 ? "monthly" : `every ${d/30} mo`;
+    if (d % 7 === 0) return d === 7 ? "weekly" : `every ${d/7} wk`;
+    return `every ${d} days`;
+  };
+  const dueOf = c => c.lastDone ? isoToNum(c.lastDone) + c.everyDays : (c.startDue ? isoToNum(c.startDue) : TODAY);
+  const roomName = id => rooms.find(r => r.id === id)?.name || "Unsorted";
+  const dueText = diff => diff < 0 ? `${-diff}d late` : diff === 0 ? "today" : diff === 1 ? "tomorrow" : `in ${diff}d`;
+  const dueClass = diff => diff < 0 ? "late" : diff === 0 ? "today" : diff <= 3 ? "soon" : "ok";
+  const ago = c => {
+    if (!c.lastDone) return "not logged yet";
+    const n = TODAY - isoToNum(c.lastDone);
+    return n === 0 ? "done today" : n === 1 ? "done yesterday" : `done ${n}d ago`;
+  };
+
+  function enriched() {
+    return chores.map(c => {
+      const due = dueOf(c), diff = due - TODAY;
+      const start = c.lastDone ? isoToNum(c.lastDone) : due - c.everyDays;
+      const frac = Math.max(0, Math.min(1, (TODAY - start) / c.everyDays));
+      return { ...c, due, diff, frac };
+    });
+  }
+
+  function choreRow(c, showRoom) {
+    const cls = dueClass(c.diff);
+    const bar = c.diff < 0 ? "late" : c.frac > .75 ? "warn" : "";
+    return `<div class="chore" data-id="${esc(c.id)}">
+      <button class="done" type="button" data-done="${esc(c.id)}" aria-label="Mark ${esc(c.name)} done" ${readOnly ? "disabled" : ""}>
+        <svg viewBox="0 0 16 16" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>
+      </button>
+      <div class="cbody">
+        <button class="cname" type="button" data-edit="${esc(c.id)}">${esc(c.name)}</button>
+        <div class="meta">
+          ${showRoom ? `<span class="chip">${esc(roomName(c.room))}</span>` : ""}
+          <span>${everyLabel(c.everyDays)}</span><span>·</span><span>${ago(c)}</span>
+          ${c.minutes ? `<span>·</span><span>${c.minutes} min</span>` : ""}
+        </div>
+        <div class="fresh ${bar}" aria-hidden="true"><i style="width:${Math.round(c.frac*100)}%"></i></div>
+      </div>
+      <div class="due ${cls}">${dueText(c.diff)}</div>
+    </div>`;
+  }
+
+  function group(title, list, opts = {}) {
+    if (!list.length) return "";
+    const mins = list.reduce((a, c) => a + (c.minutes || 0), 0);
+    return `<section class="group">
+      <div class="ghead"><h2>${title}</h2><span class="count">${list.length}</span>${mins ? `<span class="mins">~${mins} min</span>` : ""}</div>
+      <div class="list">${list.map(c => choreRow(c, true)).join("")}</div>
+      ${opts.after || ""}
+    </section>`;
+  }
+
+  function render() {
+    const all = enriched().sort((a, b) => a.diff - b.diff || b.frac - a.frac || a.name.localeCompare(b.name));
+    const late = all.filter(c => c.diff < 0), today = all.filter(c => c.diff === 0);
+    const week = all.filter(c => c.diff > 0 && c.diff <= 7), later = all.filter(c => c.diff > 7);
+    const ready = loaded.rooms && loaded.chores;
+    $("#sLate").textContent = ready ? late.length : "–";
+    $("#sToday").textContent = ready ? today.length : "–";
+    $("#sWeek").textContent = ready ? week.length : "–";
+    $("#sMins").textContent = ready ? [...late, ...today].reduce((a, c) => a + (c.minutes || 0), 0) : "–";
+    $("#tabNext").setAttribute("aria-selected", tab === "next");
+    $("#tabRooms").setAttribute("aria-selected", tab === "rooms");
+
+    const view = $("#view");
+    if (!db) { view.innerHTML = `<div class="empty"><h2>Your chores load here</h2>Open this page in Claude while signed in to see and save your cleaning chart.</div>`; return; }
+    if (!ready) { view.innerHTML = `<div class="empty"><h2>Loading your chores…</h2>Rooms and chores appear here with what's overdue at the top.</div>`; return; }
+    if (!chores.length && tab === "next") {
+      view.innerHTML = `<div class="empty"><h2>No chores yet</h2>Add a room under <b>By room</b>, then use <b>Add chore</b> to set how often each job should happen. Overdue chores rise to the top of this list.</div>`;
+      return;
+    }
+
+    if (tab === "next") {
+      const laterBlock = later.length
+        ? (showLater ? group("Later", later) : `<button class="more" type="button" id="showLater">Show ${later.length} more chores due later</button>`)
+        : "";
+      const nothingUrgent = !late.length && !today.length
+        ? `<div class="empty"><h2>All caught up</h2>Nothing is due today. The next chores are listed below.</div>` : "";
+      view.innerHTML = `<div class="group" style="gap:22px">${nothingUrgent}${group("Overdue", late)}${group("Due today", today)}${group("Next 7 days", week)}${laterBlock}</div>`;
+    } else {
+      const byRoom = rooms.map(r => ({ r, list: all.filter(c => c.room === r.id) }));
+      const orphan = all.filter(c => !rooms.some(r => r.id === c.room));
+      if (orphan.length) byRoom.push({ r: { id: "", name: "Unsorted" }, list: orphan });
+      view.innerHTML = `<div class="group" style="gap:18px">
+        <div class="rooms">${byRoom.map(({ r, list }) => {
+          const late = list.filter(c => c.diff < 0).length;
+          return `<section class="room">
+            <div class="ghead"><h2>${esc(r.name)}</h2><span class="count">${list.length} chores${late ? ` · <span style="color:var(--late)">${late} late</span>` : ""}</span>
+              ${r.id && !readOnly ? `<button type="button" data-room="${esc(r.id)}" style="margin-left:auto">Edit</button>` : ""}</div>
+            <div class="list">${list.length ? list.map(c => choreRow(c, false)).join("") : `<div class="chore" style="grid-template-columns:1fr;color:var(--muted)">No chores in this room yet.</div>`}</div>
+          </section>`;
+        }).join("")}</div>
+        ${readOnly ? "" : `<form class="addroom" id="addRoomForm"><input id="newRoom" placeholder="New room, e.g. Garage" aria-label="New room name" maxlength="40"><button class="btn" type="submit">Add room</button></form>`}
+      </div>`;
+    }
+  }
+
+  function toast(msg, undo) {
+    clearTimeout(toastTimer);
+    $("#toastHost").innerHTML = `<div class="toast" role="status"><span>${esc(msg)}</span>${undo ? `<button type="button" id="undoBtn">Undo</button>` : ""}</div>`;
+    if (undo) $("#undoBtn").onclick = () => { $("#toastHost").innerHTML = ""; undo(); };
+    toastTimer = setTimeout(() => { $("#toastHost").innerHTML = ""; }, 5000);
+  }
+
+  async function write(fn) {
+    try { await fn(); return true; }
+    catch (e) {
+      if (e?.code === "invalid_argument" || e?.code === "not_granted") { readOnly = true; showNotice("You can view this chart but not change it."); render(); }
+      else if (e?.code === "quota_exceeded") toast("Storage is full. Delete some chores and try again.");
+      else toast("Couldn't save just now. Try again in a moment.");
+      return false;
+    }
+  }
+  function showNotice(t) { const n = $("#notice"); n.textContent = t; n.hidden = false; }
+
+  async function markDone(id) {
+    const c = chores.find(x => x.id === id); if (!c) return;
+    const prev = { lastDone: c.lastDone ?? null, history: c.history || [] };
+    const iso = numToIso(TODAY);
+    if (c.lastDone === iso) { toast(`${c.name} is already logged for today`); return; }
+    const history = [iso, ...(c.history || [])].slice(0, 24);
+    const ok = await write(() => db.doc("chores/" + id).update({ lastDone: iso, history }));
+    if (ok) toast(`${c.name} done. Next ${dueText(c.everyDays)}.`, () => write(() => db.doc("chores/" + id).update(prev)));
+  }
+
+  // ---------- chore editor ----------
+  const PRESETS = [["Daily",1],["2–3 days",3],["Weekly",7],["2 weeks",14],["Monthly",30],["Quarterly",90],["6 months",180],["Yearly",365]];
+  function openChore(id) {
+    if (!rooms.length && !id) { tab = "rooms"; render(); toast("Add a room first, then add chores to it"); return; }
+    const c = id ? chores.find(x => x.id === id) : { name: "", room: rooms[0]?.id, everyDays: 7, minutes: 10, lastDone: null };
+    if (!c) return;
+    const unit = c.everyDays % 30 === 0 ? 30 : c.everyDays % 7 === 0 ? 7 : 1;
+    const hist = (c.history || []).slice(0, 6).map(d => new Date(isoToNum(d) * DAY).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" }));
+    $("#sheetHost").innerHTML = `<div class="scrim" id="scrim"><form class="sheet" id="choreForm" role="dialog" aria-modal="true" aria-label="${id ? "Edit chore" : "Add chore"}">
+      <h2>${id ? "Edit chore" : "Add chore"}</h2>
+      <label>Chore<input id="fName" required maxlength="60" value="${esc(c.name)}" placeholder="e.g. Scrub shower" ${readOnly ? "disabled" : ""}></label>
+      <div class="row2">
+        <label>Room<select id="fRoom" ${readOnly ? "disabled" : ""}>${rooms.map(r => `<option value="${esc(r.id)}" ${r.id === c.room ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label>
+        <label>Minutes<input id="fMin" type="number" min="0" max="600" inputmode="numeric" value="${c.minutes ?? ""}" ${readOnly ? "disabled" : ""}></label>
+      </div>
+      <label>How often</label>
+      <div class="presets" id="fPresets">${PRESETS.map(([l, d]) => `<button type="button" data-d="${d}" aria-pressed="${d === c.everyDays}">${l}</button>`).join("")}</div>
+      <div class="every">
+        <input id="fEvery" type="number" min="1" max="99" value="${c.everyDays / unit}" aria-label="Repeat every" ${readOnly ? "disabled" : ""}>
+        <select id="fUnit" aria-label="Unit" ${readOnly ? "disabled" : ""}><option value="1" ${unit===1?"selected":""}>days</option><option value="7" ${unit===7?"selected":""}>weeks</option><option value="30" ${unit===30?"selected":""}>months</option></select>
+      </div>
+      <label>Last done<input id="fLast" type="date" value="${c.lastDone || ""}" max="${numToIso(TODAY)}" ${readOnly ? "disabled" : ""}></label>
+      ${hist.length ? `<div class="hist">Recent: ${hist.join(" · ")}</div>` : ""}
+      <div class="actions">
+        ${id && !readOnly ? `<button type="button" class="btn danger" id="fDel">Delete</button><span class="spacer"></span>` : ""}
+        <button type="button" class="btn" id="fCancel">${readOnly ? "Close" : "Cancel"}</button>
+        ${readOnly ? "" : `<button type="submit" class="btn primary">${id ? "Save" : "Add chore"}</button>`}
+      </div>
+    </form></div>`;
+    const close = () => { $("#sheetHost").innerHTML = ""; };
+    $("#scrim").addEventListener("click", e => { if (e.target.id === "scrim") close(); });
+    $("#fCancel").onclick = close;
+    $("#fName").focus();
+    const syncPresets = () => { const d = +$("#fEvery").value * +$("#fUnit").value; document.querySelectorAll("#fPresets button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.d === d)); };
+    $("#fPresets").addEventListener("click", e => {
+      const b = e.target.closest("button[data-d]"); if (!b || readOnly) return;
+      const d = +b.dataset.d, u = d % 30 === 0 ? 30 : d % 7 === 0 ? 7 : 1;
+      $("#fUnit").value = String(u); $("#fEvery").value = d / u; syncPresets();
+    });
+    $("#fEvery").oninput = syncPresets; $("#fUnit").onchange = syncPresets;
+    const del = $("#fDel");
+    if (del) del.onclick = async () => {
+      if (del.dataset.armed) { if (await write(() => db.doc("chores/" + id).delete())) { close(); toast(`Deleted ${c.name}`); } }
+      else { del.dataset.armed = "1"; del.textContent = "Tap again to delete"; }
+    };
+    $("#choreForm").addEventListener("submit", async e => {
+      e.preventDefault(); if (readOnly) return;
+      const name = $("#fName").value.trim(); if (!name) return;
+      const everyDays = Math.max(1, Math.round(+$("#fEvery").value * +$("#fUnit").value || 7));
+      const minutes = Math.max(0, Math.round(+$("#fMin").value || 0));
+      const last = $("#fLast").value || null;
+      const body = { name, room: $("#fRoom").value, everyDays, minutes, lastDone: last };
+      if (id) {
+        const history = c.history || [];
+        if (last && last !== c.lastDone && !history.includes(last)) body.history = [last, ...history].sort().reverse().slice(0, 24);
+        if (await write(() => db.doc("chores/" + id).update(body))) { close(); toast("Saved"); }
+      } else {
+        body.history = last ? [last] : []; body.startDue = numToIso(TODAY); body.created = numToIso(TODAY);
+        if (await write(() => db.collection("chores").add(body))) { close(); toast(`Added ${name}`); }
+      }
+    });
+  }
+
+  function openRoom(id) {
+    const r = rooms.find(x => x.id === id); if (!r) return;
+    const count = chores.filter(c => c.room === id).length;
+    $("#sheetHost").innerHTML = `<div class="scrim" id="scrim"><form class="sheet" id="roomForm" role="dialog" aria-modal="true" aria-label="Edit room">
+      <h2>Edit room</h2>
+      <label>Name<input id="rName" required maxlength="40" value="${esc(r.name)}"></label>
+      ${count ? `<div class="hist">Move or delete its ${count} chores before deleting this room.</div>` : ""}
+      <div class="actions">
+        ${count ? "" : `<button type="button" class="btn danger" id="rDel">Delete room</button><span class="spacer"></span>`}
+        <button type="button" class="btn" id="rCancel">Cancel</button><button type="submit" class="btn primary">Save</button>
+      </div></form></div>`;
+    const close = () => { $("#sheetHost").innerHTML = ""; };
+    $("#scrim").addEventListener("click", e => { if (e.target.id === "scrim") close(); });
+    $("#rCancel").onclick = close;
+    const del = $("#rDel");
+    if (del) del.onclick = async () => { if (await write(() => db.doc("rooms/" + id).delete())) close(); };
+    $("#roomForm").addEventListener("submit", async e => {
+      e.preventDefault(); const name = $("#rName").value.trim(); if (!name) return;
+      if (await write(() => db.doc("rooms/" + id).update({ name }))) close();
+    });
+  }
+
+  // ---------- events ----------
+  $("#tabNext").onclick = () => { tab = "next"; try { localStorage.setItem("cr-tab", tab); } catch {} render(); };
+  $("#tabRooms").onclick = () => { tab = "rooms"; try { localStorage.setItem("cr-tab", tab); } catch {} render(); };
+  $("#addChore").onclick = () => { if (!db) return; if (readOnly) { toast("You can view this chart but not change it."); return; } openChore(null); };
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $("#sheetHost").innerHTML = ""; });
+  $("#view").addEventListener("click", e => {
+    const d = e.target.closest("[data-done]");
+    if (d) { d.classList.add("flash"); markDone(d.dataset.done); return; }
+    const ed = e.target.closest("[data-edit]"); if (ed) { openChore(ed.dataset.edit); return; }
+    const rm = e.target.closest("[data-room]"); if (rm) { openRoom(rm.dataset.room); return; }
+    if (e.target.id === "showLater") { showLater = true; render(); }
+  });
+  $("#view").addEventListener("submit", async e => {
+    if (e.target.id !== "addRoomForm") return;
+    e.preventDefault(); const name = $("#newRoom").value.trim(); if (!name) return;
+    const order = rooms.reduce((m, r) => Math.max(m, r.order || 0), 0) + 1;
+    if (await write(() => db.collection("rooms").add({ name, order }))) toast(`Added ${name}`);
+  });
+
+  render();
+
+  // ---------- data ----------
+  (async () => {
+    for (let i = 0; i < 30 && !window.claude?.use; i++) await new Promise(r => setTimeout(r, 100));
+    db = window.claude?.use ? await window.claude.use("db") : null;
+    if (!db) { render(); return; }
+    render();
+    try {
+      const u = await window.claude.use("user");
+      if (u && (await u.can("data.write")) === false) { readOnly = true; showNotice("You can view this chart but not change it."); }
+    } catch {}
+    const onErr = () => showNotice("Lost the connection to your chores. Reload the page to reconnect.");
+    db.collection("rooms").onSnapshot(s => {
+      rooms = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name));
+      loaded.rooms = true; render();
+    }, onErr);
+    db.collection("chores").onSnapshot(s => {
+      chores = s.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.name && c.everyDays);
+      loaded.chores = true; render();
+    }, onErr);
+  })();
+})();
+</script>
+
+</body></html>

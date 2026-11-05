@@ -1,0 +1,15 @@
+{
+  "name": "keel-tools",
+  "private": true,
+  "description": "Builds the vendored libraries in assets/vendor/. Only needed when updating them.",
+  "scripts": {
+    "build-firebase": "esbuild firebase-entry.js --bundle --format=esm --minify --target=es2020 --legal-comments=none --outfile=../assets/vendor/firebase.js",
+    "build-anthropic": "esbuild anthropic-entry.js --bundle --format=esm --minify --target=es2020 --legal-comments=none --outfile=../assets/vendor/anthropic.js",
+    "build": "npm run build-firebase && npm run build-anthropic"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "1.1.0",
+    "esbuild": "0.25.10",
+    "firebase": "13.1.0"
+  }
+}

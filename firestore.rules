@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Keel's Firestore rules. Paste this into the Firebase console:
+// Firestore Database > Rules > (replace everything) > Publish.
+//
+// Only signed-in accounts listed in the "members" collection can read or write anything.
+// Add a member in the console: Firestore Database > Data > members > Add document,
+// with the account's User UID (Authentication > Users) as the document ID.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isMember() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/members/$(request.auth.uid));
+    }
+
+    // All app data: keel/<app>/<collection>/<docId>
+    match /keel/{app}/{collection}/{docId} {
+      allow read, write: if isMember();
+    }
+
+    // Members can see their own entry (Keel checks it after sign-in). Only the console can change the list.
+    match /members/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}

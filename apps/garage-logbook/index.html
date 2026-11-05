@@ -1,0 +1,496 @@
+<!doctype html><html><head><meta charset=utf8><script src="../../assets/app-bridge.js" data-app="garage-logbook"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Garage Logbook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column workbench — vehicle strip, odometer plate, due board, then history and schedule. */
+:root {
+  --bg: #f3f4f2;
+  --panel: #ffffff;
+  --ink: #1d2327;
+  --muted: #5d676d;
+  --line: #d9dddb;
+  --accent: #b5651d;      /* gear-oil amber */
+  --accent-ink: #ffffff;
+  --plate: #20272b;       /* odometer face */
+  --plate-ink: #f2efe6;
+  --over: #b3261e; --over-bg: #fbe9e7;
+  --soon: #8a5a00; --soon-bg: #fdf1d6;
+  --ok: #2f6b3a; --ok-bg: #e5f2e6;
+  --none: #56606a; --none-bg: #eceeef;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15191b; --panel: #1d2326; --ink: #e7eae8; --muted: #9aa4a8; --line: #30383c;
+  --accent: #e08a3c; --accent-ink: #1a1206; --plate: #0c0f10; --plate-ink: #f2efe6;
+  --over: #ff8a80; --over-bg: #3a1d1b; --soon: #f5c060; --soon-bg: #362a12;
+  --ok: #8fd19a; --ok-bg: #1b3020; --none: #a9b2b8; --none-bg: #262d31;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #15191b; --panel: #1d2326; --ink: #e7eae8; --muted: #9aa4a8; --line: #30383c;
+  --accent: #e08a3c; --accent-ink: #1a1206; --plate: #0c0f10; --plate-ink: #f2efe6;
+  --over: #ff8a80; --over-bg: #3a1d1b; --soon: #f5c060; --soon-bg: #362a12;
+  --ok: #8fd19a; --ok-bg: #1b3020; --none: #a9b2b8; --none-bg: #262d31;
+  color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 24px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: 34px; line-height: 1; text-transform: uppercase; letter-spacing: .04em; }
+h2 { font-size: 22px; text-transform: uppercase; letter-spacing: .05em; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); padding: 7px 14px; font-weight: 500; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.primary:hover { filter: brightness(1.06); }
+button.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 4px 8px; }
+button.ghost:hover { color: var(--ink); border-color: var(--line); }
+button.danger { color: var(--over); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input, select, textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; width: 100%; min-width: 0; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 500; min-width: 0; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+.vehicles { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border-radius: 999px; padding: 6px 14px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* Odometer plate */
+.plate { background: var(--plate); color: var(--plate-ink); border-radius: 10px; padding: 20px 22px;
+  display: grid; grid-template-columns: 1fr auto; gap: 16px 24px; align-items: center; }
+.plate .who { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.plate .who h3 { font-size: 28px; text-transform: uppercase; letter-spacing: .03em; }
+.plate .meta { font-size: 13px; opacity: .7; }
+.plate .tag { display: inline-block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; border: 1px solid currentColor; border-radius: 4px; padding: 0 6px; margin-left: 8px; opacity: .8; vertical-align: middle; font-family: var(--f-body); }
+.odo { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.digits { display: flex; gap: 3px; }
+.digits span { font-family: var(--f-mono); font-size: 30px; font-weight: 500; line-height: 1; width: 1.05em; padding: 8px 0; text-align: center;
+  background: linear-gradient(#000 0 0) padding-box, #000; background: #000; color: #f2efe6; border-radius: 3px; box-shadow: inset 0 -12px 12px -8px rgba(255,255,255,.08); }
+.digits span.tenths { background: #f2efe6; color: #111; }
+.odo .unit { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .65; }
+.plate .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 1px solid rgba(255,255,255,.12); padding-top: 14px; }
+.plate button { background: transparent; color: var(--plate-ink); border-color: rgba(255,255,255,.25); }
+.plate button:hover { border-color: rgba(255,255,255,.6); }
+.plate button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.plate .odo-edit { display: flex; gap: 6px; align-items: center; }
+.plate .odo-edit input { width: 130px; background: #000; color: #f2efe6; border-color: rgba(255,255,255,.25); font-family: var(--f-mono); }
+.plate .summary { margin-left: auto; font-size: 13px; display: flex; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 560px) { .plate { grid-template-columns: 1fr; } .odo { align-items: flex-start; } .digits span { font-size: 24px; } .plate .summary { margin-left: 0; } }
+
+section { display: flex; flex-direction: column; gap: 12px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* Due board */
+.due { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); overflow: hidden; }
+.due-row { display: grid; grid-template-columns: 6px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 12px 14px 12px 0; border-top: 1px solid var(--line); }
+.due-row:first-child { border-top: 0; }
+.stripe { align-self: stretch; }
+.st-over .stripe { background: var(--over); } .st-soon .stripe { background: var(--soon); }
+.st-ok .stripe { background: var(--ok); } .st-none .stripe { background: var(--none); opacity: .4; }
+.due-row .what { min-width: 0; }
+.due-row .what strong { font-weight: 600; }
+.due-row .what .sub { font-size: 13px; color: var(--muted); }
+.pill { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; white-space: nowrap; letter-spacing: .02em; }
+.st-over .pill { color: var(--over); background: var(--over-bg); } .st-soon .pill { color: var(--soon); background: var(--soon-bg); }
+.st-ok .pill { color: var(--ok); background: var(--ok-bg); } .st-none .pill { color: var(--none); background: var(--none-bg); }
+.left { text-align: right; font-size: 13px; color: var(--muted); }
+.left .num { color: var(--ink); font-size: 14px; }
+@media (max-width: 560px) { .due-row { grid-template-columns: 6px minmax(0,1fr) auto; } .due-row .left { grid-column: 2; text-align: left; } .due-row > button { grid-column: 3; grid-row: 1 / span 2; } }
+
+/* Form panel */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px; }
+.checks label { flex-direction: row; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 8px; color: var(--ink); cursor: pointer; font-size: 13px; }
+.checks input { width: auto; margin: 0; accent-color: var(--accent); }
+.checks label:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.row.end { justify-content: flex-end; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+thead th { border-top: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+td.n, th.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .items { display: flex; flex-wrap: wrap; gap: 4px; }
+td .items span { font-size: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+td .note { font-size: 13px; color: var(--muted); margin-top: 4px; }
+tfoot td { font-weight: 600; }
+.sched input { padding: 5px 8px; }
+.sched td { vertical-align: middle; }
+.sched input.n { width: 90px; text-align: right; font-family: var(--f-mono); }
+
+.empty { border: 1px dashed var(--line); border-radius: 8px; padding: 28px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.confirm { font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 6px; font-size: 14px; z-index: 10; max-width: calc(100% - 32px); }
+details > summary { cursor: pointer; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary h2::after { content: " +"; color: var(--muted); }
+details[open] > summary h2::after { content: " −"; }
+@media (prefers-reduced-motion: no-preference) { .due-row, .chip { transition: background .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Life Tools</div>
+      <h1>Garage Logbook</h1>
+    </div>
+    <div class="vehicles" id="vehicleChips"></div>
+  </header>
+
+  <div id="status" class="empty">
+    <strong>Loading your garage…</strong>
+    <span>Vehicles, odometer readings and service records will appear here.</span>
+  </div>
+
+  <div id="main" hidden>
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <div class="plate" id="plate"></div>
+
+      <div class="panel" id="logPanel" hidden>
+        <div class="sec-head"><h2 id="logTitle">Log a service</h2><button class="ghost" id="logCancel" type="button">Close</button></div>
+        <form id="logForm" style="display:flex;flex-direction:column;gap:14px">
+          <div class="grid">
+            <label for="fDate">Date<input type="date" id="fDate" required></label>
+            <label for="fMiles">Odometer (mi)<input type="number" id="fMiles" min="0" step="1" inputmode="numeric" required></label>
+            <label for="fCost">Cost ($)<input type="number" id="fCost" min="0" step="0.01" inputmode="decimal"></label>
+            <label for="fShop">Shop or DIY<input type="text" id="fShop" placeholder="e.g. Jiffy Lube, DIY"></label>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span class="eyebrow">Work done</span>
+            <div class="checks" id="fItems"></div>
+            <label for="fOther">Other work (comma separated)<input type="text" id="fOther" placeholder="e.g. Replaced headlight bulb"></label>
+          </div>
+          <label for="fNotes">Notes<textarea id="fNotes" rows="2" placeholder="Oil brand and weight, part numbers, anything the next mechanic should know"></textarea></label>
+          <div class="row end"><button type="submit" class="primary" id="logSave">Save record</button></div>
+        </form>
+      </div>
+
+      <section>
+        <div class="sec-head"><h2>What's due</h2><span class="muted" style="font-size:13px" id="rateNote"></span></div>
+        <div class="due" id="dueList"></div>
+      </section>
+
+      <section>
+        <div class="sec-head"><h2>Service history</h2><span class="muted" style="font-size:13px" id="histNote"></span></div>
+        <div id="history"></div>
+      </section>
+
+      <details id="schedDetails">
+        <summary><h2>Maintenance schedule</h2></summary>
+        <section style="margin-top:12px">
+          <p class="muted" style="margin:0;font-size:14px;max-width:65ch">Only replacements your manufacturer's schedule calls for. Wear items like wipers, brake pads and batteries are checked during routine service and replaced when worn, so they aren't on a timer. Leave a field blank if that limit doesn't apply. Whichever limit comes first sets the due point.</p>
+          <div class="table-wrap">
+            <table class="sched">
+              <thead><tr><th>Item</th><th class="n">Every (mi)</th><th class="n">Every (months)</th><th></th></tr></thead>
+              <tbody id="schedBody"></tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" id="schedAdd">Add item</button>
+            <button type="button" class="primary" id="schedSave" disabled>Save schedule</button>
+          </div>
+        </section>
+      </details>
+    </div>
+  </div>
+
+  <div class="panel" id="vehPanel" hidden>
+    <div class="sec-head"><h2 id="vehTitle">Add a vehicle</h2><button class="ghost" id="vehCancel" type="button">Close</button></div>
+    <form id="vehForm" style="display:flex;flex-direction:column;gap:14px">
+      <div class="grid">
+        <label for="vName">Nickname<input type="text" id="vName" placeholder="e.g. The Civic" required></label>
+        <label for="vYear">Year<input type="number" id="vYear" min="1900" max="2100" inputmode="numeric"></label>
+        <label for="vMake">Make<input type="text" id="vMake" placeholder="Honda"></label>
+        <label for="vModel">Model<input type="text" id="vModel" placeholder="Civic EX"></label>
+        <label for="vMiles">Current odometer (mi)<input type="number" id="vMiles" min="0" step="1" inputmode="numeric" required></label>
+        <label for="vPlate">Plate or VIN<input type="text" id="vPlate"></label>
+      </div>
+      <div class="row end" style="justify-content:space-between">
+        <span id="vehDelete"></span>
+        <button type="submit" class="primary">Save vehicle</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const DEFAULT_SCHEDULE = [
+  { label: "Oil & filter change", miles: 5000, months: 6 },
+  { label: "Tire rotation", miles: 6000, months: 6 },
+  { label: "Engine air filter", miles: 15000, months: 12 },
+  { label: "Cabin air filter", miles: 15000, months: 12 },
+  { label: "Coolant replacement", miles: 100000, months: 120 },
+  { label: "Spark plugs", miles: 100000, months: null },
+];
+const DAY = 86400000;
+const $ = (id) => document.getElementById(id);
+const fmtMi = (n) => Math.round(n).toLocaleString("en-US");
+const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+const parseDate = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const fmtDate = (d) => (typeof d === "string" ? parseDate(d) : d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const addMonths = (s, n) => { const d = parseDate(s); d.setMonth(d.getMonth() + n); return d; };
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+let db = null, canWrite = true;
+let vehicles = [], services = [];
+let currentId = null; try { currentId = localStorage.getItem("garage.vehicle"); } catch (e) {}
+let schedDraft = null;
+
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2600); }
+function fail(e) { console.error(e); toast(e && e.code === "invalid_argument" && !canWrite ? "You can view this logbook but not change it." : "Couldn't save. Check your connection and try again."); }
+
+const current = () => vehicles.find((v) => v.id === currentId) || vehicles[0] || null;
+const vServices = (v) => services.filter((s) => s.vehicleId === v.id).sort((a, b) => (b.date.localeCompare(a.date)) || (b.miles - a.miles));
+
+// Miles per day from odometer readings spanning at least two weeks.
+function milesPerDay(v) {
+  const pts = [...(v.readings || []), ...vServices(v).map((s) => ({ date: s.date, miles: s.miles }))]
+    .filter((p) => p.date && Number.isFinite(p.miles)).sort((a, b) => a.date.localeCompare(b.date));
+  if (pts.length < 2) return null;
+  const a = pts[0], b = pts[pts.length - 1];
+  const days = (parseDate(b.date) - parseDate(a.date)) / DAY;
+  if (days < 14 || b.miles <= a.miles) return null;
+  return (b.miles - a.miles) / days;
+}
+
+function dueItems(v) {
+  const hist = vServices(v), rate = milesPerDay(v), now = parseDate(todayISO());
+  const first = hist[hist.length - 1]; // earliest record, e.g. new-car delivery
+  return (v.schedule || []).map((it) => {
+    let last = hist.find((s) => (s.items || []).includes(it.label)), assumed = false;
+    if (!last && first) { last = first; assumed = true; } // never logged: count from the earliest record
+    if (!last) return { it, status: "none", rank: 2, score: 0 };
+    const milesLeft = it.nextMiles ? it.nextMiles - v.miles : it.miles ? last.miles + it.miles - v.miles : null;
+    const dueDate = it.months ? addMonths(last.date, it.months) : null;
+    const daysLeft = dueDate ? Math.round((dueDate - now) / DAY) : null;
+    const projDays = milesLeft != null && rate ? milesLeft / rate : null;
+    const effDays = Math.min(daysLeft ?? Infinity, projDays ?? Infinity);
+    let status = "ok";
+    if ((milesLeft != null && milesLeft <= 0) || (daysLeft != null && daysLeft <= 0)) status = "over";
+    else if ((milesLeft != null && milesLeft <= 750) || (daysLeft != null && daysLeft <= 30) || effDays <= 30) status = "soon";
+    const rank = { over: 0, soon: 1, ok: 3 }[status];
+    const score = Math.min(milesLeft != null ? milesLeft / 30 : Infinity, daysLeft ?? Infinity, projDays ?? Infinity);
+    return { it, last, assumed, milesLeft, dueDate, daysLeft, projDays, status, rank, score };
+  }).sort((a, b) => a.rank - b.rank || a.score - b.score);
+}
+
+function render() {
+  const v = current();
+  // vehicle chips
+  const chips = $("vehicleChips");
+  chips.innerHTML = vehicles.map((x) => `<button class="chip" type="button" data-v="${esc(x.id)}" aria-pressed="${v && x.id === v.id}">${esc(x.name)}</button>`).join("")
+    + (canWrite ? `<button class="chip" type="button" id="addVeh">+ Add vehicle</button>` : "");
+  chips.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => { currentId = b.dataset.v; try { localStorage.setItem("garage.vehicle", currentId); } catch (e) {} schedDraft = null; closePanels(); render(); });
+  const add = $("addVeh"); if (add) add.onclick = () => openVehicle(null);
+
+  if (!v) {
+    $("main").hidden = true; $("status").hidden = false;
+    $("status").innerHTML = `<strong>No vehicles yet</strong><span>Add your car with its current odometer reading. A standard maintenance schedule is filled in for you and you can adjust it.</span>${canWrite ? `<button class="primary" type="button" id="emptyAdd">Add a vehicle</button>` : ""}`;
+    const e = $("emptyAdd"); if (e) e.onclick = () => openVehicle(null);
+    return;
+  }
+  $("status").hidden = true; $("main").hidden = false;
+
+  const due = dueItems(v);
+  const nOver = due.filter((d) => d.status === "over").length, nSoon = due.filter((d) => d.status === "soon").length;
+  const digits = String(Math.max(0, Math.floor(v.miles))).padStart(6, "0").split("");
+  const sub = [v.year, v.make, v.model].filter(Boolean).join(" ");
+  $("plate").innerHTML = `
+    <div class="who">
+      <span class="eyebrow" style="color:inherit;opacity:.6">Vehicle</span>
+      <h3>${esc(v.name)}${v.example ? '<span class="tag">Example</span>' : ""}</h3>
+      <div class="meta">${esc(sub)}${v.plate ? " · " + esc(v.plate) : ""}</div>
+    </div>
+    <div class="odo" aria-label="Odometer ${fmtMi(v.miles)} miles">
+      <div class="digits">${digits.map((d) => `<span>${d}</span>`).join("")}</div>
+      <div class="unit">Miles · read ${v.milesAt ? fmtDate(v.milesAt) : "—"}</div>
+    </div>
+    <div class="actions">
+      ${canWrite ? `<button class="primary" type="button" id="btnLog">Log a service</button>
+      <form class="odo-edit" id="odoForm"><input type="number" id="odoInput" min="0" step="1" inputmode="numeric" placeholder="New reading" aria-label="New odometer reading"><button type="submit">Update odometer</button></form>
+      <button type="button" class="ghost" style="color:inherit;opacity:.7" id="btnEditVeh">Edit vehicle</button>` : ""}
+      <div class="summary">
+        ${nOver ? `<span style="color:#ff8a80">● ${nOver} overdue</span>` : ""}
+        ${nSoon ? `<span style="color:#f5c060">● ${nSoon} due soon</span>` : ""}
+        ${!nOver && !nSoon ? `<span style="color:#8fd19a">● Nothing due in the next month</span>` : ""}
+      </div>
+    </div>`;
+  if (canWrite) {
+    $("btnLog").onclick = () => openLog([]);
+    $("btnEditVeh").onclick = () => openVehicle(v);
+    $("odoForm").onsubmit = async (e) => {
+      e.preventDefault(); const n = Math.round(Number($("odoInput").value));
+      if (!Number.isFinite(n) || n <= 0) return toast("Enter the number on your odometer.");
+      if (n < v.miles) return toast(`That's lower than the last reading of ${fmtMi(v.miles)} mi.`);
+      await saveReading(v, n, todayISO()); toast("Odometer updated");
+    };
+  }
+
+  // due list
+  const rate = milesPerDay(v);
+  $("rateNote").textContent = rate ? `You drive about ${fmtMi(rate * 30)} mi a month` : "Update the odometer now and then to get date estimates";
+  $("dueList").innerHTML = due.length ? due.map((d, i) => {
+    const pill = { over: "Overdue", soon: "Due soon", ok: "OK", none: "No record" }[d.status];
+    let left = "", sub = "";
+    if (d.status === "none") { sub = intervalText(d.it); left = `<span>Log the last time it was done</span>`; }
+    else {
+      sub = d.assumed
+        ? `Never logged, so counted from ${fmtDate(d.last.date)} at ${fmtMi(d.last.miles)} mi · ${intervalText(d.it)}`
+        : `Last done ${fmtDate(d.last.date)} at ${fmtMi(d.last.miles)} mi · ${intervalText(d.it)}`;
+      const parts = [];
+      if (d.milesLeft != null) parts.push(d.milesLeft <= 0 ? `<span class="num">${fmtMi(-d.milesLeft)}</span> mi over` : `in <span class="num">${fmtMi(d.milesLeft)}</span> mi`);
+      if (d.dueDate) parts.push(d.daysLeft <= 0 ? `since ${fmtDate(d.dueDate)}` : `by ${fmtDate(d.dueDate)}`);
+      else if (d.projDays != null && d.milesLeft > 0) parts.push(`around ${fmtDate(new Date(Date.now() + d.projDays * DAY))}`);
+      left = parts.join("<br>");
+    }
+    return `<div class="due-row st-${d.status}"><div class="stripe"></div>
+      <div class="what"><strong>${esc(d.it.label)}</strong> <span class="pill">${pill}</span><div class="sub">${sub}</div></div>
+      <div class="left">${left}</div>
+      ${canWrite ? `<button type="button" data-log="${i}">Log</button>` : "<span></span>"}</div>`;
+  }).join("") : `<div class="empty" style="border:0">No schedule items. Open the schedule below to add some.</div>`;
+  $("dueList").querySelectorAll("[data-log]").forEach((b) => b.onclick = () => openLog([due[+b.dataset.log].it.label]));
+
+  // history
+  const hist = vServices(v);
+  const total = hist.reduce((a, s) => a + (Number(s.cost) || 0), 0);
+  $("histNote").textContent = hist.length ? `${hist.length} record${hist.length > 1 ? "s" : ""} · $${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} spent` : "";
+  $("history").innerHTML = hist.length ? `<div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th class="n">Odometer</th><th>Work</th><th>Shop</th><th class="n">Cost</th><th></th></tr></thead>
+    <tbody>${hist.map((s) => `<tr>
+      <td style="white-space:nowrap">${fmtDate(s.date)}</td>
+      <td class="n">${fmtMi(s.miles)}</td>
+      <td><div class="items">${(s.items || []).map((x) => `<span>${esc(x)}</span>`).join("")}</div>${s.notes ? `<div class="note">${esc(s.notes)}</div>` : ""}</td>
+      <td>${esc(s.shop || "")}</td>
+      <td class="n">${s.cost ? "$" + Number(s.cost).toFixed(2) : "—"}</td>
+      <td style="white-space:nowrap">${canWrite ? `<span data-del="${esc(s.id)}"><button class="ghost" type="button">Delete</button></span>` : ""}</td></tr>`).join("")}</tbody>
+    </table></div>` : `<div class="empty">No service records yet. Use <strong>Log a service</strong> after your next oil change, or add past work from your receipts.</div>`;
+  $("history").querySelectorAll("[data-del]").forEach((wrap) => wrap.querySelector("button").onclick = () => {
+    wrap.innerHTML = `<span class="confirm">Delete? <button class="ghost danger" type="button" data-yes>Yes</button><button class="ghost" type="button" data-no>No</button></span>`;
+    wrap.querySelector("[data-no]").onclick = render;
+    wrap.querySelector("[data-yes]").onclick = () => db.doc("services/" + wrap.dataset.del).delete().then(() => toast("Record deleted")).catch(fail);
+  });
+
+  renderSchedule(v);
+}
+
+function intervalText(it) {
+  if (it.nextMiles) return `next check at ${fmtMi(it.nextMiles)} mi`;
+  const p = []; if (it.miles) p.push(`every ${fmtMi(it.miles)} mi`); if (it.months) p.push(`${it.months} mo`);
+  return p.join(" or ") || "no interval set";
+}
+
+function renderSchedule(v) {
+  const rows = schedDraft || v.schedule || [];
+  $("schedBody").innerHTML = rows.map((r, i) => `<tr>
+    <td><input type="text" id="sl-${i}" value="${esc(r.label)}" aria-label="Item name" ${canWrite ? "" : "disabled"}></td>
+    <td class="n"><input class="n" type="number" id="sm-${i}" min="0" step="500" value="${r.miles ?? ""}" aria-label="Miles" ${canWrite ? "" : "disabled"}></td>
+    <td class="n"><input class="n" type="number" id="so-${i}" min="0" step="1" value="${r.months ?? ""}" aria-label="Months" ${canWrite ? "" : "disabled"}></td>
+    <td>${canWrite ? `<button class="ghost" type="button" data-rm="${i}" aria-label="Remove">Remove</button>` : ""}</td></tr>`).join("");
+  $("schedSave").disabled = !schedDraft;
+  $("schedAdd").hidden = $("schedSave").hidden = !canWrite;
+  const pull = () => { schedDraft = rows.map((r, i) => ({ id: r.id, nextMiles: r.nextMiles ?? null, label: $("sl-" + i).value.trim(), miles: num($("sm-" + i).value), months: num($("so-" + i).value) })); $("schedSave").disabled = false; };
+  $("schedBody").querySelectorAll("input").forEach((inp) => inp.oninput = pull);
+  $("schedBody").querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { pull(); schedDraft.splice(+b.dataset.rm, 1); renderSchedule(v); });
+}
+const num = (s) => { const n = Number(s); return s === "" || !Number.isFinite(n) || n <= 0 ? null : n; };
+$("schedAdd").onclick = () => { const v = current(); const base = schedDraft || (v.schedule || []).map((r) => ({ ...r })); base.push({ id: uid(), label: "", miles: null, months: 12 }); schedDraft = base; renderSchedule(v); $("sl-" + (base.length - 1)).focus(); };
+$("schedSave").onclick = async () => {
+  const v = current(); const clean = schedDraft.filter((r) => r.label).map((r) => ({ id: r.id || uid(), label: r.label, miles: r.miles, months: r.months, nextMiles: r.nextMiles ?? null }));
+  try { await db.doc("vehicles/" + v.id).update({ schedule: clean }); schedDraft = null; toast("Schedule saved"); } catch (e) { fail(e); }
+};
+
+async function saveReading(v, miles, date) {
+  if (miles <= v.miles && date <= (v.milesAt || "")) return;
+  const readings = [...(v.readings || []), { date, miles }].slice(-100);
+  const patch = { readings };
+  if (miles >= v.miles) { patch.miles = miles; patch.milesAt = date; }
+  try { await db.doc("vehicles/" + v.id).update(patch); } catch (e) { fail(e); }
+}
+
+function closePanels() { $("logPanel").hidden = true; $("vehPanel").hidden = true; }
+
+function openLog(preset) {
+  const v = current(); closePanels();
+  $("logPanel").hidden = false;
+  $("logTitle").textContent = `Log a service · ${v.name}`;
+  $("fDate").value = todayISO(); $("fMiles").value = Math.round(v.miles); $("fCost").value = ""; $("fShop").value = ""; $("fOther").value = ""; $("fNotes").value = "";
+  $("fItems").innerHTML = (v.schedule || []).map((it, i) => `<label for="fi-${i}"><input type="checkbox" id="fi-${i}" value="${esc(it.label)}" ${preset.includes(it.label) ? "checked" : ""}>${esc(it.label)}</label>`).join("");
+  $("logPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("logCancel").onclick = closePanels;
+$("logForm").onsubmit = async (e) => {
+  e.preventDefault(); const v = current();
+  const items = [...$("fItems").querySelectorAll("input:checked")].map((c) => c.value)
+    .concat($("fOther").value.split(",").map((s) => s.trim()).filter(Boolean));
+  if (!items.length) return toast("Pick at least one item, or describe the work under Other.");
+  const rec = { vehicleId: v.id, date: $("fDate").value, miles: Math.round(Number($("fMiles").value)), items,
+    cost: num($("fCost").value), shop: $("fShop").value.trim(), notes: $("fNotes").value.trim(), created: new Date().toISOString() };
+  $("logSave").disabled = true;
+  try {
+    await db.collection("services").add(rec);
+    if (rec.miles > v.miles) await saveReading(v, rec.miles, rec.date);
+    closePanels(); toast("Service logged");
+  } catch (err) { fail(err); } finally { $("logSave").disabled = false; }
+};
+
+function openVehicle(v) {
+  closePanels(); $("vehPanel").hidden = false;
+  $("vehTitle").textContent = v ? `Edit ${v.name}` : "Add a vehicle";
+  $("vName").value = v?.name || ""; $("vYear").value = v?.year || ""; $("vMake").value = v?.make || ""; $("vModel").value = v?.model || "";
+  $("vMiles").value = v ? Math.round(v.miles) : ""; $("vPlate").value = v?.plate || "";
+  $("vMiles").disabled = !!v;
+  const del = $("vehDelete"); del.innerHTML = v ? `<button type="button" class="ghost danger" id="vDel">Delete vehicle</button>` : "";
+  if (v) $("vDel").onclick = () => {
+    del.innerHTML = `<span class="confirm">Delete ${esc(v.name)} and its ${vServices(v).length} records? <button type="button" class="ghost danger" id="vYes">Delete</button><button type="button" class="ghost" id="vNo">Keep</button></span>`;
+    $("vNo").onclick = () => openVehicle(v);
+    $("vYes").onclick = async () => {
+      try { for (const s of vServices(v)) await db.doc("services/" + s.id).delete(); await db.doc("vehicles/" + v.id).delete(); closePanels(); currentId = null; toast("Vehicle deleted"); } catch (e) { fail(e); }
+    };
+  };
+  $("vehPanel").scrollIntoView({ behavior: "smooth", block: "start" }); $("vName").focus();
+  $("vehForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const base = { name: $("vName").value.trim(), year: num($("vYear").value), make: $("vMake").value.trim(), model: $("vModel").value.trim(), plate: $("vPlate").value.trim() };
+    try {
+      if (v) { await db.doc("vehicles/" + v.id).update({ ...base, example: false }); }
+      else {
+        const miles = Math.round(Number($("vMiles").value)), date = todayISO();
+        const ref = await db.collection("vehicles").add({ ...base, miles, milesAt: date, readings: [{ date, miles }], schedule: DEFAULT_SCHEDULE.map((s) => ({ id: uid(), ...s })), created: new Date().toISOString() });
+        currentId = ref.id; try { localStorage.setItem("garage.vehicle", currentId); } catch (er) {}
+      }
+      closePanels(); toast("Vehicle saved");
+    } catch (err) { fail(err); }
+  };
+}
+$("vehCancel").onclick = closePanels;
+
+(async () => {
+  db = await claude.use("db");
+  if (!db) { $("status").innerHTML = "<strong>Sign in to open your logbook</strong><span>Your vehicles and service records are stored with this page and load once you're signed in to Claude.</span>"; return; }
+  const user = await claude.use("user");
+  if (user) { const w = await user.can("data.write"); if (w === false) canWrite = false; }
+  let gotV = false, gotS = false;
+  const done = () => { if (gotV && gotS) render(); };
+  db.collection("vehicles").onSnapshot((snap) => { vehicles = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.created || "").localeCompare(b.created || "")); gotV = true; done(); },
+    () => { $("status").innerHTML = "<strong>Couldn't load your garage</strong><span>Reload the page to try again.</span>"; });
+  db.collection("services").onSnapshot((snap) => { services = snap.docs.map((d) => ({ id: d.id, ...d.data() })); gotS = true; done(); }, () => {});
+})();
+</script>
+
+</body></html>

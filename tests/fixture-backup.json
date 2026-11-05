@@ -1,0 +1,276 @@
+{
+ "keel": 1,
+ "exportedAt": "2026-01-10T12:00:00.000Z",
+ "note": "Made-up data for tests/smoke.mjs.",
+ "apps": {
+  "cleaning-rounds": {
+   "rooms": {
+    "kitchen": {
+     "name": "Kitchen",
+     "order": 1
+    },
+    "bath": {
+     "name": "Bathroom",
+     "order": 2
+    }
+   },
+   "chores": {
+    "c01": {
+     "name": "Wipe counters",
+     "room": "kitchen",
+     "everyDays": 1,
+     "minutes": 5,
+     "lastDone": null,
+     "history": [],
+     "startDue": "2026-01-01",
+     "created": "2026-01-01T00:00:00.000Z"
+    },
+    "c02": {
+     "name": "Scrub tub",
+     "room": "bath",
+     "everyDays": 14,
+     "minutes": 15,
+     "lastDone": "2026-01-05",
+     "history": [
+      "2026-01-05"
+     ],
+     "startDue": null,
+     "created": "2026-01-01T00:00:00.000Z"
+    }
+   }
+  },
+  "house-upkeep-ledger": {
+   "systems": {
+    "s1": {
+     "name": "Smoke alarms",
+     "category": "Safety",
+     "location": "Hallway",
+     "brand": "",
+     "model": "",
+     "installedYear": 2020,
+     "notes": "",
+     "createdAt": 1
+    }
+   },
+   "tasks": {
+    "t1": {
+     "title": "Test smoke alarms",
+     "everyMonths": 6,
+     "month": 1,
+     "systemId": "s1",
+     "lastDone": "",
+     "pro": false,
+     "notes": "",
+     "createdAt": 1
+    }
+   },
+   "log": {
+    "l1": {
+     "date": "2026-01-05",
+     "title": "New batteries",
+     "taskId": "t1",
+     "systemId": "s1",
+     "cost": 12,
+     "by": "Me",
+     "notes": "",
+     "createdAt": 1
+    }
+   }
+  },
+  "garden-planner": {
+   "settings": {
+    "garden": {
+     "zone": "7a",
+     "lastFrost": "04-15",
+     "firstFrost": "10-20",
+     "location": "Testville",
+     "isDefault": false
+    }
+   },
+   "beds": {
+    "b1": {
+     "name": "Bed 1",
+     "width": 4,
+     "length": 8,
+     "sun": "full",
+     "notes": "",
+     "order": 1
+    }
+   },
+   "plantings": {},
+   "trees": {
+    "t1": {
+     "kind": "apple",
+     "label": "Apple",
+     "variety": "",
+     "planted": "",
+     "notes": "",
+     "log": []
+    }
+   }
+  },
+  "pantry-recipe-book": {
+   "pantry": {
+    "p1": {
+     "name": "rice",
+     "qty": "1 bag",
+     "location": "Pantry",
+     "expires": "",
+     "low": false,
+     "store": "Store A",
+     "updated": 1
+    }
+   },
+   "recipes": {
+    "r1": {
+     "title": "Fried rice",
+     "time": "20",
+     "servings": 4,
+     "tags": [
+      "quick"
+     ],
+     "ingredients": [
+      "2 cups rice",
+      "soy sauce (optional)"
+     ],
+     "steps": [
+      "Cook the rice."
+     ],
+     "notes": "",
+     "updated": 1
+    }
+   },
+   "shop": {
+    "s1": {
+     "name": "milk",
+     "from": "Running low",
+     "store": "Store A",
+     "done": false,
+     "added": 1
+    }
+   },
+   "settings": {
+    "household": {
+     "allergens": [
+      "shellfish"
+     ],
+     "stores": [
+      "Store A"
+     ]
+    }
+   }
+  },
+  "garage-logbook": {
+   "vehicles": {
+    "car": {
+     "name": "Car",
+     "year": 2018,
+     "make": "Make",
+     "model": "Model",
+     "plate": "",
+     "miles": 50000,
+     "milesAt": "2026-01-01",
+     "readings": [
+      {
+       "date": "2025-06-01",
+       "miles": 45000
+      },
+      {
+       "date": "2026-01-01",
+       "miles": 50000
+      }
+     ],
+     "schedule": [
+      {
+       "id": "oil",
+       "label": "Oil & filter change",
+       "miles": 5000,
+       "months": 6
+      }
+     ],
+     "created": "2025-06-01T00:00:00.000Z"
+    }
+   },
+   "services": {
+    "car-20250601": {
+     "vehicleId": "car",
+     "date": "2025-06-01",
+     "miles": 45000,
+     "items": [
+      "Oil & filter change"
+     ],
+     "cost": 50,
+     "shop": "Shop",
+     "notes": "",
+     "created": "2025-06-01T00:00:00.000Z"
+    }
+   }
+  },
+  "cut-to-150": {
+   "plan": {
+    "current": {
+     "startWeight": 200,
+     "startDate": "2026-01-01",
+     "goalWeight": 180,
+     "goalDate": "2026-06-01",
+     "calories": 2000,
+     "protein": 150,
+     "steps": 8000
+    }
+   },
+   "weighins": {
+    "2026-01-01": {
+     "date": "2026-01-01",
+     "weight": 200.0,
+     "createdAt": "2026-01-01T12:00:00.000Z"
+    },
+    "2026-01-08": {
+     "date": "2026-01-08",
+     "weight": 199.0,
+     "createdAt": "2026-01-08T12:00:00.000Z"
+    }
+   },
+   "workouts": {
+    "2026-01-02-lift": {
+     "date": "2026-01-02",
+     "kind": "lift",
+     "createdAt": "2026-01-02T12:00:00.000Z"
+    }
+   }
+  },
+  "card-file": {
+   "cards": {
+    "c1": {
+     "name": "Pat Example",
+     "title": "Manager",
+     "company": "Example Co",
+     "website": "example.com",
+     "phones": [
+      {
+       "label": "work",
+       "number": "555-0100"
+      }
+     ],
+     "emails": [
+      "pat@example.com"
+     ],
+     "street": "",
+     "city": "",
+     "region": "",
+     "postal": "",
+     "country": "",
+     "met": "",
+     "other": "",
+     "notes": "",
+     "frontId": null,
+     "backId": null,
+     "frontAspect": null,
+     "backAspect": null,
+     "createdAt": "2026-01-02T00:00:00.000Z",
+     "updatedAt": "2026-01-02T00:00:00.000Z"
+    }
+   }
+  }
+ },
+ "assets": {}
+}

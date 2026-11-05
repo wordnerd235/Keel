@@ -1,0 +1,839 @@
+<!doctype html><html><head><meta charset=utf8><script src="../../assets/app-bridge.js" data-app="card-file"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Card File</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow column like a card file drawer; sticky header with search, cards as 3.5:2 thumbnails beside their details. */
+:root {
+  --bg: #e9edf1;
+  --surface: #ffffff;
+  --surface-2: #f4f6f8;
+  --ink: #17212f;
+  --muted: #5b6878;
+  --line: #d3dae2;
+  --accent: #1f5f8b;
+  --accent-ink: #ffffff;
+  --accent-soft: #dceaf4;
+  --tab: #c98a1b;
+  --danger: #b3261e;
+  --danger-soft: #fbe3e1;
+  --ok: #2e7d4f;
+  --shadow: 0 1px 2px rgba(23,33,47,.08), 0 4px 14px rgba(23,33,47,.06);
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161d; --surface: #1a212b; --surface-2: #222b37; --ink: #e6ebf1; --muted: #9aa7b6;
+    --line: #2f3a48; --accent: #6fb3e3; --accent-ink: #0d1620; --accent-soft: #1e3446; --tab: #e2a940;
+    --danger: #f28b82; --danger-soft: #3a1f1d; --ok: #7fcf9c; --shadow: 0 1px 2px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161d; --surface: #1a212b; --surface-2: #222b37; --ink: #e6ebf1; --muted: #9aa7b6;
+  --line: #2f3a48; --accent: #6fb3e3; --accent-ink: #0d1620; --accent-soft: #1e3446; --tab: #e2a940;
+  --danger: #f28b82; --danger-soft: #3a1f1d; --ok: #7fcf9c; --shadow: 0 1px 2px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 680px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+header.top .wrap { padding-block: 12px; display: grid; gap: 10px; }
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand h1 { font-size: 1.5rem; letter-spacing: -.01em; }
+.brand .count { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.tools { display: flex; gap: 8px; }
+.search { flex: 1; min-width: 0; position: relative; }
+.search input { width: 100%; padding: 10px 12px 10px 34px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--muted); fill: none; }
+select.sort { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); padding: 0 8px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 14px; font-weight: 500; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+.btn.danger.armed { background: var(--danger); color: var(--surface); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.sm { padding: 5px 10px; font-size: .85rem; }
+.btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+.linkish { background: none; border: 0; color: var(--accent); padding: 4px 0; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+
+main .wrap { padding-block: 16px 48px; }
+.notice { padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); font-size: .9rem; }
+.notice.warn { background: var(--danger-soft); color: var(--ink); }
+
+/* List */
+.letter { font-family: var(--f-display); font-weight: 700; color: var(--tab); font-size: .95rem; letter-spacing: .08em; padding: 14px 2px 6px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.list { display: grid; gap: 22px 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); }
+.list .letter { grid-column: 1 / -1; margin-bottom: -8px; }
+.tile { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.tile .cap { display: flex; gap: 10px; align-items: start; justify-content: space-between; }
+.tile .who { min-width: 0; text-align: left; background: none; border: 0; padding: 0; }
+.tile .who:hover .name { color: var(--accent); }
+.tile .name { font-weight: 600; font-size: 1.02rem; overflow-wrap: anywhere; }
+.tile .sub { color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; }
+
+/* 3D card: the saved photo is the face; tap flips to the back photo. */
+.card3d { --ar: 1.75; --rx: 0deg; --ry: 0deg; --flip: 0deg; --gx: 50%; --gy: 30%; perspective: 1100px; aspect-ratio: var(--ar); max-width: 100%; width: 100%; padding: 0; border: 0; background: none; display: block; cursor: pointer; }
+.card3d.portrait { width: auto; height: min(420px, 70vh); max-height: 100%; margin: 0 auto; }
+.card3d .inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(calc(var(--ry) + var(--flip))); }
+.card3d.flipped { --flip: 180deg; }
+.face { position: absolute; inset: 0; border-radius: 9px; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--surface); box-shadow: 0 1px 1px rgba(0,0,0,.12), 0 10px 24px -8px rgba(23,33,47,.35); }
+.face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.face.b { transform: rotateY(180deg); }
+.face::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at var(--gx) var(--gy), rgba(255,255,255,.28), rgba(255,255,255,0) 55%); mix-blend-mode: soft-light; }
+.face.plain { display: grid; align-content: center; gap: 3px; padding: 8% 9%; text-align: left; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+.face.plain .pn { font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; line-height: 1.15; overflow-wrap: anywhere; }
+.face.plain .pc { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.face.plain .pm { font-family: var(--f-mono); font-size: .78rem; margin-top: 8px; overflow-wrap: anywhere; }
+.face.plain .tag { position: absolute; right: 10px; bottom: 8px; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.flipbtn { flex: none; }
+@media (prefers-reduced-motion: no-preference) { .card3d .inner { transition: transform .65s cubic-bezier(.2,.7,.2,1); } .card3d.tilting .inner { transition: transform .08s linear; } }
+.detail-card { max-width: 560px; width: 100%; margin: 0 auto; }
+.detail-card .card3d.portrait { height: min(520px, 72vh); }
+.empty { text-align: center; padding: 40px 12px; display: grid; gap: 12px; justify-items: center; }
+.empty .card-outline { width: 210px; max-width: 100%; aspect-ratio: 3.5/2; border: 2px dashed var(--line); border-radius: 10px; display: grid; place-items: center; color: var(--muted); font-family: var(--f-mono); font-size: .8rem; }
+.empty p { color: var(--muted); max-width: 40ch; margin: 0; }
+
+/* Editor + detail */
+.panel { display: grid; gap: 18px; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.panel-head h2 { font-size: 1.35rem; }
+.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 460px) { .sides { grid-template-columns: 1fr; } }
+.side { display: grid; gap: 6px; min-width: 0; }
+.side .label { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; }
+.slot { position: relative; aspect-ratio: 3.5 / 2; max-width: 100%; width: 100%; border: 2px dashed var(--line); border-radius: 10px; background: var(--surface); display: grid; place-items: center; padding: 0; overflow: hidden; color: var(--muted); }
+.slot.filled { border-style: solid; }
+.slot img { width: 100%; height: 100%; object-fit: contain; background: var(--surface-2); }
+.slot .ph { display: grid; gap: 4px; justify-items: center; font-size: .9rem; }
+.slot .ph svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.side .actions { display: flex; gap: 12px; flex-wrap: wrap; font-size: .88rem; }
+.readbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.status { color: var(--muted); font-size: .9rem; min-width: 0; }
+.status.err { color: var(--danger); }
+.status.ok { color: var(--ok); }
+
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+@media (max-width: 460px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span, .group-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.field input, .field textarea, .multi input, .multi select { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.field textarea { min-height: 70px; resize: vertical; }
+.multi { display: grid; gap: 8px; }
+.multi .line { display: grid; grid-template-columns: 96px 1fr 36px; gap: 8px; }
+.multi .line.noselect { grid-template-columns: 1fr 36px; }
+.multi .x { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; color: var(--muted); }
+.mono { font-family: var(--f-mono); font-size: .92rem; }
+.savebar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding-top: 6px; border-top: 1px solid var(--line); }
+.savebar .spacer { flex: 1; }
+
+.flip { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.flip button { border: 0; background: var(--surface); padding: 5px 12px; font-size: .85rem; }
+.flip button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.bigcard { aspect-ratio: 3.5 / 2; max-width: 100%; width: 100%; border-radius: 12px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); display: grid; place-items: center; color: var(--muted); }
+.bigcard img { width: 100%; height: 100%; object-fit: contain; background: var(--surface-2); }
+.facts { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.fact { display: grid; grid-template-columns: 92px 1fr auto; gap: 10px; align-items: start; padding: 11px 14px; border-top: 1px solid var(--line); }
+.fact:first-child { border-top: 0; }
+.fact .k { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; padding-top: 3px; }
+.fact .v { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; user-select: text; }
+.who-big h2 { font-size: 1.6rem; }
+.who-big p { margin: 2px 0 0; color: var(--muted); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: .9rem; z-index: 20; max-width: calc(100% - 32px); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: no-preference) { .row, .btn { transition: border-color .15s, background .15s; } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Card File</h1>
+      <span class="count" id="count"></span>
+      <button class="btn primary" id="scanBtn" type="button">
+        <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        Scan card
+      </button>
+    </div>
+    <div class="tools" id="tools">
+      <label class="search"><span class="sr">Search cards</span>
+        <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input id="q" type="search" placeholder="Search name, company, phone, notes" autocomplete="off">
+      </label>
+      <label><span class="sr">Sort</span>
+        <select class="sort" id="sort"><option value="name">A–Z</option><option value="new">Newest</option></select>
+      </label>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div id="banner" hidden></div>
+
+    <!-- List view -->
+    <section id="listView">
+      <div id="list" class="list"></div>
+      <div id="empty" class="empty" hidden>
+        <div class="card-outline">3.5 × 2 in</div>
+        <h3 id="emptyTitle">Loading your cards…</h3>
+        <p id="emptyText">Tap Scan card, take a photo of the front (and the back if it has one), and the details are read for you to check and save.</p>
+      </div>
+      <div class="savebar" id="exportBar" hidden style="margin-top:20px">
+        <span class="status">Export every card as a spreadsheet for Google Contacts or Excel.</span>
+        <span class="spacer"></span>
+        <button class="btn sm" id="exportCsv" type="button">Export CSV</button>
+      </div>
+    </section>
+
+    <!-- Editor -->
+    <section id="editView" class="panel" hidden>
+      <div class="panel-head">
+        <h2 id="editTitle">New card</h2>
+        <button class="btn sm" id="cancelEdit" type="button">Cancel</button>
+      </div>
+
+      <div class="sides">
+        <div class="side" data-side="front">
+          <div class="label"><span>Front</span></div>
+          <button class="slot" type="button" data-shoot="front"></button>
+          <div class="actions">
+            <button class="linkish" type="button" data-shoot="front">Take photo</button>
+            <button class="linkish" type="button" data-pick="front">Choose from photos</button>
+            <button class="linkish" type="button" data-uncrop="front" hidden>Undo crop</button>
+            <button class="linkish" type="button" data-clear="front" hidden>Remove</button>
+          </div>
+        </div>
+        <div class="side" data-side="back">
+          <div class="label"><span>Back</span><span>optional</span></div>
+          <button class="slot" type="button" data-shoot="back"></button>
+          <div class="actions">
+            <button class="linkish" type="button" data-shoot="back">Take photo</button>
+            <button class="linkish" type="button" data-pick="back">Choose from photos</button>
+            <button class="linkish" type="button" data-uncrop="back" hidden>Undo crop</button>
+            <button class="linkish" type="button" data-clear="back" hidden>Remove</button>
+          </div>
+        </div>
+      </div>
+      <input id="camFront" type="file" accept="image/*" capture="environment" hidden>
+      <input id="camBack" type="file" accept="image/*" capture="environment" hidden>
+      <input id="libFront" type="file" accept="image/*" hidden>
+      <input id="libBack" type="file" accept="image/*" hidden>
+
+      <div class="readbar">
+        <button class="btn primary" id="readBtn" type="button" disabled>Read card</button>
+        <button class="btn sm" id="stopBtn" type="button" hidden>Stop</button>
+        <span class="status" id="readStatus">Add a photo of the front to read it.</span>
+      </div>
+
+      <form id="form" autocomplete="off">
+        <fieldset>
+          <div class="grid2">
+            <label class="field"><span>Name</span><input id="f_name"></label>
+            <label class="field"><span>Title</span><input id="f_title"></label>
+          </div>
+          <div class="grid2">
+            <label class="field"><span>Company</span><input id="f_company"></label>
+            <label class="field"><span>Website</span><input id="f_website" class="mono" inputmode="url"></label>
+          </div>
+          <div class="multi">
+            <span class="group-label">Phone</span>
+            <div id="phones" class="multi"></div>
+            <div><button class="linkish" type="button" id="addPhone">Add phone</button></div>
+          </div>
+          <div class="multi">
+            <span class="group-label">Email</span>
+            <div id="emails" class="multi"></div>
+            <div><button class="linkish" type="button" id="addEmail">Add email</button></div>
+          </div>
+          <label class="field"><span>Street</span><input id="f_street"></label>
+          <div class="grid3">
+            <label class="field"><span>City</span><input id="f_city"></label>
+            <label class="field"><span>State</span><input id="f_region"></label>
+            <label class="field"><span>ZIP</span><input id="f_postal" class="mono"></label>
+          </div>
+          <div class="grid2">
+            <label class="field"><span>Country</span><input id="f_country"></label>
+            <label class="field"><span>Where we met</span><input id="f_met" placeholder="e.g. Chamber of Commerce mixer"></label>
+          </div>
+          <label class="field"><span>Other on card</span><textarea id="f_other" placeholder="LinkedIn, license numbers, slogans, second language…"></textarea></label>
+          <label class="field"><span>My notes</span><textarea id="f_notes"></textarea></label>
+        </fieldset>
+        <div class="savebar" style="margin-top:16px">
+          <span class="status" id="saveStatus"></span>
+          <span class="spacer"></span>
+          <button class="btn primary" id="saveBtn" type="submit">Save card</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Detail -->
+    <section id="detailView" class="panel" hidden>
+      <div class="panel-head">
+        <button class="btn sm" id="backBtn" type="button">← All cards</button>
+        <div class="flip" id="flip" role="group" aria-label="Card side">
+          <button type="button" data-face="front" aria-pressed="true">Front</button>
+          <button type="button" data-face="back" aria-pressed="false">Back</button>
+        </div>
+      </div>
+      <div class="detail-card" id="bigcard"></div>
+      <div class="who-big"><h2 id="d_name"></h2><p id="d_role"></p></div>
+      <div class="facts" id="facts"></div>
+      <div class="savebar">
+        <button class="btn primary" id="vcardBtn" type="button">Save to phone contacts</button>
+        <button class="btn" id="editBtn" type="button">Edit</button>
+        <span class="spacer"></span>
+        <button class="btn danger" id="delBtn" type="button">Delete</button>
+      </div>
+      <p class="status" id="detailStatus"></p>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const el = (tag, props = {}, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+      else if (v !== undefined && v !== null && v !== false) n.setAttribute(k, v === true ? "" : v);
+    }
+    for (const c of kids) if (c != null) n.append(c);
+    return n;
+  };
+
+  let db = null, assets = null, sample = null, downloads = null, canImages = false;
+  let cards = [];          // [{id, ...data}]
+  let loaded = false;
+  let current = null;      // card id in detail view
+  let face = "front";
+  let edit = null;         // editor state
+  let readCtl = null;
+
+  const PHONE_LABELS = ["work", "mobile", "office", "fax", "other"];
+  const blobUrl = id => (window.claude && window.claude.assetUrl ? window.claude.assetUrl(id) : "/_blob/" + id); // Keel: photos come from the shared store
+
+  // ---------- helpers ----------
+  function toast(msg) {
+    const t = $("#toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2600);
+  }
+  function banner(msg, warn) {
+    const b = $("#banner");
+    if (!msg) { b.hidden = true; return; }
+    b.className = "notice" + (warn ? " warn" : ""); b.textContent = msg; b.hidden = false; b.style.marginBottom = "14px";
+  }
+  const digits = s => String(s || "").replace(/\D/g, "");
+  const lastName = n => { const p = String(n || "").trim().split(/\s+/).filter(w => !/^(jr|sr|ii|iii|iv|phd|md|esq)\.?,?$/i.test(w)); return (p.length > 1 ? p[p.length - 1] : p[0] || "").replace(/[,.]/g, ""); };
+  const firstNames = n => { const p = String(n || "").trim().split(/\s+/); const l = lastName(n); const i = p.lastIndexOf(l); return (i > 0 ? p.slice(0, i) : p.slice(0, -1)).join(" "); };
+  const sortKey = c => (lastName(c.name) || c.company || "").toLowerCase();
+  function fmtDate(iso) { try { return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); } catch { return ""; } }
+  function cityLine(c) { return [c.city, [c.region, c.postal].filter(Boolean).join(" ")].filter(Boolean).join(", "); }
+  function addressText(c) { return [c.street, cityLine(c), c.country].filter(Boolean).join("\n"); }
+
+  async function decode(file) {
+    try { return await createImageBitmap(file, { imageOrientation: "from-image" }); }
+    catch { return await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); }); }
+  }
+  const toJpeg = (c, fallback) => new Promise(r => c.toBlob(b => r(b || fallback), "image/jpeg", 0.88));
+  // Downscale a photo; returns {blob, w, h}.
+  async function shrink(file, max = 1600) {
+    const src = await decode(file);
+    const w = src.width, h = src.height, s = Math.min(1, max / Math.max(w, h));
+    const c = document.createElement("canvas"); c.width = Math.round(w * s); c.height = Math.round(h * s);
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+    return { blob: await toJpeg(c, file), w: c.width, h: c.height };
+  }
+  // Crop to the card's edges (box = [left, top, right, bottom] as 0-1 fractions) and turn it upright.
+  async function cropCard(img, box, rotate) {
+    const ok = Array.isArray(box) && box.length === 4 && box.every(n => typeof n === "number" && n >= 0 && n <= 1) && box[2] - box[0] > 0.2 && box[3] - box[1] > 0.2;
+    const rot = [90, 180, 270].includes(Number(rotate)) ? Number(rotate) : 0;
+    if (!ok && !rot) return null;
+    const [l, t, r, b] = ok ? box : [0, 0, 1, 1];
+    const pad = ok ? 0.006 : 0;
+    const src = await decode(img.blob);
+    const sx = Math.max(0, (l - pad) * src.width), sy = Math.max(0, (t - pad) * src.height);
+    const sw = Math.min(src.width - sx, (r - l + 2 * pad) * src.width), sh = Math.min(src.height - sy, (b - t + 2 * pad) * src.height);
+    const c = document.createElement("canvas");
+    const turn = rot === 90 || rot === 270;
+    c.width = Math.round(turn ? sh : sw); c.height = Math.round(turn ? sw : sh);
+    const g = c.getContext("2d");
+    g.translate(c.width / 2, c.height / 2); g.rotate(rot * Math.PI / 180);
+    g.drawImage(src, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
+    return { blob: await toJpeg(c, img.blob), w: c.width, h: c.height };
+  }
+
+  // ---------- capabilities ----------
+  async function boot() {
+    render();
+    const use = n => (window.claude && window.claude.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null));
+    [db, assets, sample, downloads] = await Promise.all([use("db"), use("assets"), use("sample"), use("downloads")]);
+    if (sample) { const lim = await sample.limits().catch(() => null); canImages = !!(lim && lim.images); }
+    if (!db) {
+      loaded = true;
+      banner("Saving needs the page open in claude.ai while signed in. You can still try a scan, but cards won't be kept.", true);
+      render(); return;
+    }
+    db.collection("cards").onSnapshot(snap => {
+      cards = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      loaded = true;
+      render();
+      if (current && !$("#detailView").hidden) { if (cards.some(c => c.id === current)) showDetail(current, true); else showList(); }
+    }, err => { loaded = true; banner("Couldn't load your cards (" + err.code + "). Reload to try again.", true); render(); });
+    updateReadState();
+  }
+
+  // ---------- list ----------
+  function matches(c, q) {
+    if (!q) return true;
+    const hay = [c.name, c.title, c.company, c.website, c.street, c.city, c.region, c.postal, c.country, c.met, c.other, c.notes,
+      ...(c.emails || []), ...(c.phones || []).map(p => p.number)].join(" ").toLowerCase();
+    const d = digits(q);
+    return q.toLowerCase().split(/\s+/).every(t => hay.includes(t)) || (d.length >= 3 && (c.phones || []).some(p => digits(p.number).includes(d)));
+  }
+  function render() {
+    const q = $("#q").value.trim();
+    const sort = $("#sort").value;
+    const shown = cards.filter(c => matches(c, q));
+    shown.sort(sort === "new" ? (a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) : (a, b) => sortKey(a).localeCompare(sortKey(b)));
+    $("#count").textContent = loaded ? (cards.length === 1 ? "1 card" : cards.length + " cards") : "";
+    const list = $("#list"); list.replaceChildren();
+    let letter = null;
+    for (const c of shown) {
+      if (sort === "name") {
+        const L = (sortKey(c)[0] || "#").toUpperCase(); const LL = /[A-Z]/.test(L) ? L : "#";
+        if (LL !== letter) { letter = LL; list.append(el("div", { class: "letter", text: LL })); }
+      }
+      const sub = [c.title, c.company].filter(Boolean).join(" · ");
+      const card = card3d(c);
+      list.append(el("div", { class: "tile" },
+        card,
+        el("div", { class: "cap" },
+          el("button", { class: "who", type: "button", onclick: () => showDetail(c.id) },
+            el("div", { class: "name", text: c.name || c.company || "Unnamed card" }),
+            sub ? el("div", { class: "sub", text: sub }) : null),
+          el("button", { class: "btn sm flipbtn", type: "button", onclick: () => showDetail(c.id) }, "Details"))));
+    }
+    const empty = $("#empty");
+    empty.hidden = shown.length > 0;
+    if (!loaded) { $("#emptyTitle").textContent = "Loading your cards…"; }
+    else if (cards.length === 0) { $("#emptyTitle").textContent = "No cards yet"; $("#emptyText").textContent = "Tap Scan card, take a photo of the front (and the back if it has one), and the details are read for you to check and save."; }
+    else { $("#emptyTitle").textContent = "No matches"; $("#emptyText").textContent = "Nothing matches \u201c" + q + "\u201d. Try part of a name, company, or phone number."; }
+    $("#exportBar").hidden = cards.length === 0;
+  }
+  // A card you can tilt (mouse) and tap to flip. Faces are the saved photos; a missing side is typeset from the details.
+  function plainFace(c, cls, tag) {
+    const first = (c.phones && c.phones[0] && c.phones[0].number) || "";
+    const mail = (c.emails && c.emails[0]) || "";
+    return el("div", { class: "face plain " + cls },
+      el("div", { class: "pn", text: c.name || c.company || "Unnamed card" }),
+      el("div", { class: "pc", text: [c.title, c.name ? c.company : ""].filter(Boolean).join(" · ") }),
+      first || mail || c.website ? el("div", { class: "pm", text: [first, mail, c.website].filter(Boolean).join("\n") }) : null,
+      el("span", { class: "tag", text: tag }));
+  }
+  function card3d(c, onFlip) {
+    const ar = Number(c.frontAspect) > 0.3 && Number(c.frontAspect) < 3 ? Number(c.frontAspect) : 1.75;
+    const name = c.name || c.company || "card";
+    const b = el("button", { class: "card3d" + (ar < 1 ? " portrait" : ""), type: "button", "aria-label": "Flip " + name + "'s card", "aria-pressed": "false" });
+    b.style.setProperty("--ar", String(ar));
+    const front = c.frontId ? el("div", { class: "face f" }, el("img", { src: blobUrl(c.frontId), alt: "Front of " + name + "'s card", loading: "lazy" })) : plainFace(c, "f", "No photo");
+    const back = c.backId ? el("div", { class: "face b" }, el("img", { src: blobUrl(c.backId), alt: "Back of " + name + "'s card", loading: "lazy" })) : plainFace(c, "b", c.frontId ? "Blank back" : "No photo");
+    b.append(el("div", { class: "inner" }, front, back));
+    b.addEventListener("click", () => {
+      const on = b.classList.toggle("flipped"); b.setAttribute("aria-pressed", String(on));
+      if (onFlip) onFlip(on);
+    });
+    const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) {
+      b.addEventListener("pointermove", e => {
+        if (e.pointerType !== "mouse") return;
+        const r = b.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        b.classList.add("tilting");
+        b.style.setProperty("--rx", ((0.5 - y) * 12).toFixed(2) + "deg");
+        b.style.setProperty("--ry", ((x - 0.5) * 16).toFixed(2) + "deg");
+        b.style.setProperty("--gx", (x * 100).toFixed(1) + "%"); b.style.setProperty("--gy", (y * 100).toFixed(1) + "%");
+      });
+      b.addEventListener("pointerleave", () => { b.classList.remove("tilting"); b.style.setProperty("--rx", "0deg"); b.style.setProperty("--ry", "0deg"); });
+    }
+    return b;
+  }
+
+  function showView(id) {
+    for (const v of ["listView", "editView", "detailView"]) $("#" + v).hidden = v !== id;
+    $("#tools").hidden = id !== "listView";
+    $("#scanBtn").hidden = id === "editView";
+    if (!arguments[1]) window.scrollTo(0, 0);
+  }
+  function showList() { current = null; showView("listView"); render(); }
+
+  // ---------- detail ----------
+  function showDetail(id, keepScroll) {
+    const c = cards.find(x => x.id === id); if (!c) return;
+    if (current !== id) face = "front";
+    current = id;
+    showView("detailView", keepScroll);
+    $("#d_name").textContent = c.name || c.company || "Unnamed card";
+    $("#d_role").textContent = [c.title, c.name ? c.company : ""].filter(Boolean).join(" · ");
+    const syncFlip = () => $$("#flip button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.face === face)));
+    const big = card3d(c, on => { face = on ? "back" : "front"; syncFlip(); });
+    if (face === "back") { big.classList.add("flipped"); big.setAttribute("aria-pressed", "true"); }
+    $("#bigcard").replaceChildren(big);
+    syncFlip();
+    const facts = $("#facts"); facts.replaceChildren();
+    const fact = (k, v, copy, cls) => {
+      if (!v) return;
+      facts.append(el("div", { class: "fact" }, el("div", { class: "k", text: k }), el("div", { class: "v" + (cls ? " " + cls : ""), text: v }),
+        copy ? el("button", { class: "btn sm", type: "button", onclick: () => copyText(v) }, "Copy") : el("span")));
+    };
+    (c.phones || []).forEach(p => fact(p.label || "phone", p.number, true, "mono"));
+    (c.emails || []).forEach(e => fact("email", e, true, "mono"));
+    fact("website", c.website, true, "mono");
+    fact("address", addressText(c), true);
+    fact("met", c.met);
+    fact("other", c.other);
+    fact("notes", c.notes);
+    fact("scanned", fmtDate(c.createdAt));
+    const del = $("#delBtn"); del.classList.remove("armed"); del.textContent = "Delete";
+    $("#detailStatus").textContent = "";
+    $("#vcardBtn").hidden = !downloads;
+  }
+  async function copyText(v) {
+    try { await navigator.clipboard.writeText(v); toast("Copied"); }
+    catch { toast("Copy blocked here; press and hold the text to copy it"); }
+  }
+  $$("#flip button").forEach(b => b.addEventListener("click", () => {
+    const card = $("#bigcard .card3d"); if (!card) return;
+    if ((b.dataset.face === "back") !== card.classList.contains("flipped")) card.click();
+  }));
+  $("#backBtn").onclick = showList;
+  $("#editBtn").onclick = () => openEditor(cards.find(c => c.id === current));
+  $("#delBtn").onclick = async () => {
+    const b = $("#delBtn");
+    if (!b.classList.contains("armed")) { b.classList.add("armed"); b.textContent = "Tap again to delete"; setTimeout(() => { b.classList.remove("armed"); b.textContent = "Delete"; }, 4000); return; }
+    const c = cards.find(x => x.id === current); if (!c || !db) return;
+    b.disabled = true;
+    try {
+      await db.collection("cards").doc(c.id).delete();
+      if (assets) for (const a of [c.frontId, c.backId]) if (a) await assets.delete(a).catch(() => {});
+      toast("Deleted " + (c.name || "card")); showList();
+    } catch (e) { $("#detailStatus").textContent = "Couldn't delete (" + (e.code || "error") + ")."; }
+    b.disabled = false;
+  };
+
+  // ---------- editor ----------
+  function openEditor(card) {
+    edit = {
+      id: card ? card.id : null,
+      createdAt: card ? card.createdAt : null,
+      front: card && card.frontId ? { id: card.frontId, aspect: card.frontAspect } : null,
+      back: card && card.backId ? { id: card.backId, aspect: card.backAspect } : null,
+      dropIds: [],
+    };
+    $("#editTitle").textContent = card ? "Edit card" : "New card";
+    const c = card || {};
+    for (const k of ["name", "title", "company", "website", "street", "city", "region", "postal", "country", "met", "other", "notes"]) $("#f_" + k).value = c[k] || "";
+    setPhones(c.phones && c.phones.length ? c.phones : [{ label: "work", number: "" }]);
+    setEmails(c.emails && c.emails.length ? c.emails : [""]);
+    $("#saveStatus").textContent = ""; $("#saveStatus").className = "status";
+    edit.dupeOk = false;
+    $("#readStatus").className = "status";
+    drawSlots(); updateReadState();
+    showView("editView");
+  }
+  function drawSlots() {
+    for (const side of ["front", "back"]) {
+      const s = edit[side]; const slot = $(`.slot[data-shoot="${side}"]`);
+      slot.classList.toggle("filled", !!s);
+      if (s) slot.replaceChildren(el("img", { src: s.url || blobUrl(s.id), alt: side + " photo" }));
+      else slot.replaceChildren(el("span", { class: "ph" },
+        (() => { const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 24 24"); svg.innerHTML = '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'; return svg; })(),
+        el("span", { text: side === "front" ? "Photograph the front" : "Back, if it has info" })));
+      $(`[data-clear="${side}"]`).hidden = !s;
+      $(`[data-uncrop="${side}"]`).hidden = !(s && s.raw);
+    }
+  }
+  function updateReadState() {
+    if (!edit) return;
+    const rb = $("#readBtn"), st = $("#readStatus");
+    rb.hidden = !canImages;
+    const hasNew = (edit.front && edit.front.blob) || (edit.back && edit.back.blob);
+    rb.disabled = !hasNew || !!readCtl;
+    if (readCtl) return;
+    if (!canImages) { st.textContent = sample === null && window.claude ? "Card reading isn't available here. Type the details below." : "Card reading isn't available in this view. Type the details below."; return; }
+    if (!edit.front && !edit.back) st.textContent = "Add a photo of the front to read it.";
+    else if (!hasNew) st.textContent = "Take a new photo to read it again.";
+    else if (!st.dataset.done) st.textContent = edit.back ? "Both sides ready. Tap Read card." : "Add the back if it has details, or tap Read card.";
+  }
+  async function takeFile(side, file) {
+    if (!file) return;
+    $("#readStatus").dataset.done = "";
+    const img = await shrink(file).catch(() => ({ blob: file, w: 0, h: 0 }));
+    const prev = edit[side];
+    if (prev && prev.id) edit.dropIds.push(prev.id);
+    if (prev && prev.url) URL.revokeObjectURL(prev.url);
+    edit[side] = { blob: img.blob, url: URL.createObjectURL(img.blob), aspect: img.h ? img.w / img.h : null };
+    drawSlots(); updateReadState();
+  }
+  function setImage(side, img, raw) {
+    const s = edit[side]; if (s && s.url) URL.revokeObjectURL(s.url);
+    edit[side] = { blob: img.blob, url: URL.createObjectURL(img.blob), aspect: img.h ? img.w / img.h : null, raw };
+    drawSlots();
+  }
+  for (const side of ["front", "back"]) {
+    const cap = side === "front" ? "Front" : "Back";
+    $$(`[data-shoot="${side}"]`).forEach(b => b.addEventListener("click", () => $("#cam" + cap).click()));
+    $(`[data-pick="${side}"]`).addEventListener("click", () => $("#lib" + cap).click());
+    $(`[data-clear="${side}"]`).addEventListener("click", () => {
+      const s = edit[side]; if (s && s.id) edit.dropIds.push(s.id); if (s && s.url) URL.revokeObjectURL(s.url);
+      edit[side] = null; drawSlots(); updateReadState();
+    });
+    $(`[data-uncrop="${side}"]`).addEventListener("click", () => { const s = edit[side]; if (s && s.raw) setImage(side, s.raw, null); });
+    for (const id of ["#cam" + cap, "#lib" + cap]) $(id).addEventListener("change", e => { takeFile(side, e.target.files[0]); e.target.value = ""; });
+  }
+
+  function phoneLine(p) {
+    const sel = el("select", { "aria-label": "Phone type" }, ...PHONE_LABELS.map(l => el("option", { value: l, text: l })));
+    sel.value = PHONE_LABELS.includes(p.label) ? p.label : "other";
+    return el("div", { class: "line" }, sel, el("input", { class: "mono", type: "tel", value: p.number || "", "aria-label": "Phone number" }),
+      el("button", { class: "x", type: "button", "aria-label": "Remove phone", text: "×", onclick: e => e.currentTarget.parentElement.remove() }));
+  }
+  function emailLine(v) {
+    return el("div", { class: "line noselect" }, el("input", { class: "mono", type: "email", value: v || "", "aria-label": "Email" }),
+      el("button", { class: "x", type: "button", "aria-label": "Remove email", text: "×", onclick: e => e.currentTarget.parentElement.remove() }));
+  }
+  function setPhones(arr) { $("#phones").replaceChildren(...arr.map(phoneLine)); }
+  function setEmails(arr) { $("#emails").replaceChildren(...arr.map(emailLine)); }
+  $("#addPhone").onclick = () => $("#phones").append(phoneLine({ label: "mobile", number: "" }));
+  $("#addEmail").onclick = () => $("#emails").append(emailLine(""));
+  function collect() {
+    const v = k => $("#f_" + k).value.trim();
+    return {
+      name: v("name"), title: v("title"), company: v("company"), website: v("website"),
+      street: v("street"), city: v("city"), region: v("region"), postal: v("postal"), country: v("country"),
+      met: v("met"), other: v("other"), notes: v("notes"),
+      phones: $$("#phones .line").map(l => ({ label: l.querySelector("select").value, number: l.querySelector("input").value.trim() })).filter(p => p.number),
+      emails: $$("#emails input").map(i => i.value.trim()).filter(Boolean),
+    };
+  }
+
+  const INTRO_BOTH = `You are reading photos of one business card so its details can be saved as a contact.
+Image 1 is the FRONT of the card. Image 2 is the BACK of the same card; it may repeat the front, add more numbers or an address, or be in another language. Combine both sides into one contact.`;
+  const INTRO_FRONT = `You are reading a photo of the FRONT of one business card so its details can be saved as a contact.`;
+  const INTRO_BACK = `You are reading a photo of the BACK of one business card so its details can be saved as a contact.`;
+  const PROMPT = `
+For each photo also give:
+- a box: the card's edges in that photo as [left, top, right, bottom], each a fraction 0-1 of the photo's width/height. Trim the table or hand around the card. Use null if you cannot tell.
+- a rotate: degrees (0, 90, 180 or 270) to turn the photo CLOCKWISE so the card's main text reads upright.
+Rules:
+- Copy text exactly as printed. Do not guess or invent anything that is not on the card. Use "" for anything missing.
+- Phone labels: "work", "mobile", "office", "fax", or "other" (use the card's own markers like M, C, T, O, F, Direct, Cell).
+- Keep phone numbers formatted as printed, including extensions.
+- Put a US address into street / city / region (2-letter state) / postal. For other countries fill country.
+- "other": anything else useful on the card that has no field (social handles, license numbers, a second-language name, office hours), one per line.
+Reply with only this JSON object:
+{"name":"","title":"","company":"","phones":[{"label":"work","number":""}],"emails":[""],"website":"","street":"","city":"","region":"","postal":"","country":"","other":"","photos":[{"box":[0,0,1,1],"rotate":0}]}
+"photos" has one entry per image, in the same order as the images.`;
+
+  $("#readBtn").onclick = async () => {
+    if (!sample || !edit) return;
+    // Use the uncropped original if a crop was already applied, so a re-read starts from the full photo.
+    const sides = ["front", "back"].filter(k => edit[k] && edit[k].blob);
+    if (!sides.length) return;
+    for (const k of sides) if (edit[k].raw) setImage(k, edit[k].raw, null);
+    const imgs = sides.map(k => edit[k].blob);
+    const st = $("#readStatus"); st.className = "status"; st.textContent = "Reading the card…";
+    readCtl = new AbortController(); $("#stopBtn").hidden = false; updateReadState();
+    const intro = sides.length === 2 ? INTRO_BOTH : sides[0] === "front" ? INTRO_FRONT : INTRO_BACK;
+    try {
+      const r = await sample.json(intro + PROMPT, { images: imgs, signal: readCtl.signal, modelTier: "default" });
+      fillFrom(r);
+      const photos = r && Array.isArray(r.photos) ? r.photos : [];
+      for (let i = 0; i < sides.length; i++) {
+        const p = photos[i]; const s = edit && edit[sides[i]];
+        if (!p || !s || !s.blob) continue;
+        const raw = { blob: s.blob, w: 0, h: 0 }; raw.w = s.aspect || 0; raw.h = s.aspect ? 1 : 0;
+        const cropped = await cropCard(raw, p.box, p.rotate).catch(() => null);
+        if (cropped) setImage(sides[i], cropped, raw);
+      }
+      st.className = "status ok"; st.textContent = "Done. Check the details, then save."; st.dataset.done = "1";
+    } catch (e) {
+      st.className = "status err";
+      const m = {
+        cancelled: "Stopped.", not_granted: "Card reading was not allowed. Type the details below.",
+        rate_limited: "Too many reads just now. Wait a minute and tap Read card again.",
+        image_rejected: "That photo couldn't be read. Try another shot.",
+        invalid_json: "The card came back garbled. Tap Read card to try again.",
+        refused: "This card couldn't be read. Type the details below.",
+      };
+      st.textContent = m[e && e.code] || "Reading failed. Check your connection and try again.";
+      if (e && (e.code === "not_granted" || e.code === "sampling_disabled" || e.code === "images_unavailable")) canImages = false;
+    } finally { readCtl = null; $("#stopBtn").hidden = true; updateReadState(); }
+  };
+  $("#stopBtn").onclick = () => readCtl && readCtl.abort();
+
+  function fillFrom(r) {
+    if (!r || typeof r !== "object") return;
+    const s = x => (typeof x === "string" ? x.trim() : "");
+    for (const k of ["name", "title", "company", "website", "street", "city", "region", "postal", "country", "other"]) {
+      const val = s(r[k]); const inp = $("#f_" + k);
+      if (val) inp.value = val;            // keep anything already typed if the read found nothing
+    }
+    const phones = Array.isArray(r.phones) ? r.phones.map(p => ({ label: s(p && p.label).toLowerCase(), number: s(p && p.number) })).filter(p => p.number) : [];
+    const emails = Array.isArray(r.emails) ? r.emails.map(s).filter(Boolean) : [];
+    if (phones.length) setPhones(phones);
+    if (emails.length) setEmails(emails);
+  }
+
+  $("#cancelEdit").onclick = () => {
+    for (const side of ["front", "back"]) if (edit && edit[side] && edit[side].url) URL.revokeObjectURL(edit[side].url);
+    const back = edit && edit.id; edit = null; readCtl && readCtl.abort();
+    back ? showDetail(back) : showList();
+  };
+
+  function findDupe(data) {
+    const em = new Set(data.emails.map(e => e.toLowerCase()));
+    const ph = new Set(data.phones.map(p => digits(p.number)).filter(d => d.length >= 7));
+    return cards.find(c => c.id !== edit.id && (
+      (c.emails || []).some(e => em.has(String(e).toLowerCase())) ||
+      (c.phones || []).some(p => ph.has(digits(p.number))) ||
+      (data.name && c.name && c.name.toLowerCase() === data.name.toLowerCase() && (c.company || "").toLowerCase() === data.company.toLowerCase())));
+  }
+
+  $("#form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const st = $("#saveStatus"), btn = $("#saveBtn");
+    const data = collect();
+    if (!data.name && !data.company && !data.phones.length && !data.emails.length) { st.className = "status err"; st.textContent = "Add at least a name, company, phone, or email."; return; }
+    if (!db) { st.className = "status err"; st.textContent = "Can't save here. Open this page in claude.ai while signed in."; return; }
+    const dupe = findDupe(data);
+    if (dupe && !edit.dupeOk) {
+      edit.dupeOk = true; st.className = "status err";
+      st.textContent = "You already have " + (dupe.name || dupe.company) + ". Tap Save card again to keep both.";
+      btn.textContent = "Save anyway"; return;
+    }
+    btn.disabled = true; st.className = "status"; st.textContent = "Saving…";
+    try {
+      for (const side of ["front", "back"]) {
+        const s = edit[side];
+        if (s && s.blob) {
+          if (!assets) { data[side + "Id"] = null; continue; }
+          st.textContent = "Uploading " + side + " photo…";
+          const up = await assets.upload(s.blob, { type: "image/jpeg" });
+          data[side + "Id"] = up.id;
+        } else data[side + "Id"] = s && s.id ? s.id : null;
+        data[side + "Aspect"] = s && s.aspect ? Math.round(s.aspect * 1000) / 1000 : null;
+      }
+      const now = new Date().toISOString();
+      data.createdAt = edit.createdAt || now; data.updatedAt = now;
+      const ref = edit.id ? db.collection("cards").doc(edit.id) : db.collection("cards").doc();
+      await ref.set(data);
+      if (assets) for (const id of edit.dropIds) if (id !== data.frontId && id !== data.backId) await assets.delete(id).catch(() => {});
+      for (const side of ["front", "back"]) if (edit[side] && edit[side].url) URL.revokeObjectURL(edit[side].url);
+      edit = null;
+      toast(!assets && (data.frontId === null) ? "Saved (photos can only be kept by the page's owner or editors)" : "Saved " + (data.name || data.company || "card"));
+      cards = cards.filter(c => c.id !== ref.id).concat([{ id: ref.id, ...data }]);
+      showDetail(ref.id);
+    } catch (err) {
+      st.className = "status err";
+      st.textContent = err && err.code === "quota_exceeded" ? "Storage is full. Delete some old cards first." : "Couldn't save (" + ((err && err.code) || "error") + "). Try again.";
+    } finally { btn.disabled = false; btn.textContent = "Save card"; }
+  });
+
+  // ---------- exports ----------
+  const vEsc = s => String(s || "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  function vcard(c) {
+    const L = ["BEGIN:VCARD", "VERSION:3.0",
+      "N:" + vEsc(lastName(c.name)) + ";" + vEsc(firstNames(c.name)) + ";;;",
+      "FN:" + vEsc(c.name || c.company || "Contact")];
+    if (c.company) L.push("ORG:" + vEsc(c.company));
+    if (c.title) L.push("TITLE:" + vEsc(c.title));
+    const tmap = { work: "WORK,VOICE", office: "WORK,VOICE", mobile: "CELL", fax: "WORK,FAX", other: "VOICE" };
+    for (const p of c.phones || []) L.push("TEL;TYPE=" + (tmap[p.label] || "VOICE") + ":" + vEsc(p.number));
+    for (const e of c.emails || []) L.push("EMAIL;TYPE=INTERNET,WORK:" + vEsc(e));
+    if (c.website) L.push("URL:" + vEsc(/^https?:/i.test(c.website) ? c.website : "https://" + c.website));
+    if (c.street || c.city || c.region || c.postal || c.country)
+      L.push("ADR;TYPE=WORK:;;" + [c.street, c.city, c.region, c.postal, c.country].map(vEsc).join(";"));
+    const note = [c.met && "Met: " + c.met, c.other, c.notes].filter(Boolean).join("\n");
+    if (note) L.push("NOTE:" + vEsc(note));
+    L.push("END:VCARD");
+    return L.join("\r\n") + "\r\n";
+  }
+  // Minimal stored (uncompressed) zip so the .vcf can travel through the download allowlist.
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = b => { let c = 0xffffffff; for (const x of b) c = CRC[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  function zip(files) {
+    const enc = new TextEncoder(); const parts = []; const central = []; let off = 0;
+    for (const f of files) {
+      const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+      lh.setUint16(10, 0, true); lh.setUint16(12, 0x21, true); lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true);
+      lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), name, data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+      ch.setUint16(10, 0, true); ch.setUint16(12, 0, true); ch.setUint16(14, 0x21, true); ch.setUint32(16, crc, true);
+      ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+      ch.setUint32(42, off, true);
+      central.push(new Uint8Array(ch.buffer), name);
+      off += 30 + name.length + data.length;
+    }
+    const csize = central.reduce((s, p) => s + p.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, csize, true); end.setUint32(16, off, true);
+    return new Blob([...parts, ...central, new Uint8Array(end.buffer)]);
+  }
+  const safeName = s => (String(s || "contact").replace(/[^\w .-]+/g, "").trim() || "contact").slice(0, 60);
+
+  $("#vcardBtn").onclick = async () => {
+    const c = cards.find(x => x.id === current); if (!c || !downloads) return;
+    const fn = safeName(c.name || c.company);
+    try {
+      await downloads.save({ filename: fn + " contact.zip", data: zip([{ name: fn + ".vcf", text: vcard(c) }]) });
+      $("#detailStatus").textContent = "Saved. Open the zip in Files, then tap the .vcf inside and choose Create New Contact.";
+    } catch (e) { if (e && e.code !== "declined") $("#detailStatus").textContent = "Couldn't save the contact file (" + (e.code || "error") + ")."; }
+  };
+
+  $("#exportCsv").onclick = async () => {
+    if (!downloads) { toast("Downloads aren't available in this view"); return; }
+    const q = v => '"' + String(v || "").replace(/"/g, '""') + '"';
+    const head = ["Name", "Title", "Company", "Phone 1", "Phone 1 type", "Phone 2", "Phone 2 type", "Phone 3", "Phone 3 type", "Email 1", "Email 2", "Website", "Street", "City", "State", "ZIP", "Country", "Where we met", "Other", "Notes", "Scanned"];
+    const rows = [...cards].sort((a, b) => sortKey(a).localeCompare(sortKey(b))).map(c => {
+      const p = c.phones || [], e = c.emails || [];
+      return [c.name, c.title, c.company, p[0]?.number, p[0]?.label, p[1]?.number, p[1]?.label, p[2]?.number, p[2]?.label, e[0], e[1], c.website,
+        c.street, c.city, c.region, c.postal, c.country, c.met, c.other, c.notes, (c.createdAt || "").slice(0, 10)].map(q).join(",");
+    });
+    try { await downloads.save({ filename: "business-cards.csv", data: "\ufeff" + [head.map(q).join(","), ...rows].join("\r\n") }); toast("Exported " + cards.length + " cards"); }
+    catch (e) { if (e && e.code !== "declined") toast("Export failed (" + (e.code || "error") + ")"); }
+  };
+
+  // ---------- wiring ----------
+  $("#scanBtn").onclick = () => openEditor(null);
+  $("#q").addEventListener("input", render);
+  $("#sort").addEventListener("change", () => { try { localStorage.setItem("cardfile.sort", $("#sort").value); } catch {} render(); });
+  try { const s = localStorage.getItem("cardfile.sort"); if (s) $("#sort").value = s; } catch {}
+  boot();
+})();
+</script>
+
+</body></html>

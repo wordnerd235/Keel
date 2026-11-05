@@ -1,0 +1,805 @@
+<!doctype html><html><head><meta charset=utf8><script src="../../assets/app-bridge.js" data-app="garden-planner"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Garden Planner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: field notebook. Header with season facts, tabs, then one working surface per tab (week list, bed grids, 12-month calendar). */
+:root {
+  --bg: #F2F4EE;
+  --surface: #FBFCF8;
+  --sunk: #E6EBE1;
+  --line: #CDD5C6;
+  --ink: #18241C;
+  --muted: #5B6A5E;
+  --accent: #2F6B3B;
+  --accent-ink: #FFFFFF;
+  --today: #C9821A;
+  --danger: #A63A2B;
+
+  --w-indoor: #7D6FB8;
+  --w-sow: #3E8A4A;
+  --w-trans: #2A8C8C;
+  --w-fall: #C58B21;
+  --w-harvest: #D2603A;
+
+  --f-night: #C9564A;
+  --f-brass: #4C8F7E;
+  --f-allium: #8D6AAE;
+  --f-legume: #5E9A3A;
+  --f-cucurb: #D3A126;
+  --f-root: #D07A3A;
+  --f-green: #7BAE3F;
+  --f-herb: #3E8FA8;
+  --f-other: #8A8F84;
+
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r: 8px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121813; --surface: #19211B; --sunk: #222C24; --line: #344236; --ink: #E4EBE2; --muted: #9AAA9C;
+  --accent: #6DBB78; --accent-ink: #0E1A10; --today: #E9A845; --danger: #E2796A;
+  --w-indoor: #A497DE; --w-sow: #6CBB76; --w-trans: #5BBDBD; --w-fall: #E3B04E; --w-harvest: #EE8A65;
+  --f-night: #E07B70; --f-brass: #6FB8A5; --f-allium: #B394D3; --f-legume: #86C25F; --f-cucurb: #E8BE52; --f-root: #EB9A5E; --f-green: #A0CE64; --f-herb: #66B6CF; --f-other: #A6AB9F;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #121813; --surface: #19211B; --sunk: #222C24; --line: #344236; --ink: #E4EBE2; --muted: #9AAA9C;
+  --accent: #6DBB78; --accent-ink: #0E1A10; --today: #E9A845; --danger: #E2796A;
+  --w-indoor: #A497DE; --w-sow: #6CBB76; --w-trans: #5BBDBD; --w-fall: #E3B04E; --w-harvest: #EE8A65;
+  --f-night: #E07B70; --f-brass: #6FB8A5; --f-allium: #B394D3; --f-legume: #86C25F; --f-cucurb: #E8BE52; --f-root: #EB9A5E; --f-green: #A0CE64; --f-herb: #66B6CF; --f-other: #A6AB9F;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 20px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 30px; font-weight: 700; }
+h2 { font-size: 20px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 700; }
+.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+.season { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: end; }
+.fact { display: grid; gap: 0; }
+.fact .v { font-family: var(--mono); font-size: 14px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 12px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.danger { color: var(--danger); }
+.btn.danger.armed { background: var(--danger); color: var(--surface); border-color: var(--danger); }
+.btn.small { padding: 3px 9px; font-size: 13px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+.notice { border: 1px dashed var(--line); border-radius: var(--r); padding: 10px 14px; background: var(--sunk); font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab { border: 0; background: none; padding: 8px 14px; border-bottom: 3px solid transparent; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+/* settings panel */
+.settings { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; }
+.formgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 6px 8px; width: 100%; }
+.field textarea { min-height: 60px; resize: vertical; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* week */
+.week { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.task { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: baseline; }
+.task .dot { width: 10px; height: 10px; border-radius: 2px; transform: translateY(1px); }
+.task .when { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.group { display: grid; gap: 6px; }
+.empty { color: var(--muted); font-size: 14px; }
+
+/* beds */
+.beds { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.bed { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.bed.target { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+.bedhead { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.gridwrap { overflow-x: auto; }
+.grid { display: grid; gap: 3px; background: color-mix(in srgb, var(--f-root) 18%, var(--sunk)); padding: 6px; border-radius: 6px; width: max-content; min-width: 100%; }
+.cell { width: 100%; min-width: 30px; aspect-ratio: 1; border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); border-radius: 3px; background: color-mix(in srgb, var(--f-root) 10%, var(--surface)); font-family: var(--mono); font-size: 10px; font-weight: 500; display: grid; place-items: center; padding: 0; color: var(--ink); }
+.cell:hover { border-color: var(--accent); }
+.cell.filled { color: #fff; border-color: transparent; }
+.cell.sel { outline: 2px solid var(--ink); outline-offset: -2px; }
+.cell.pending { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--accent) 35%, transparent) 0 4px, transparent 4px 8px); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.legend button { background: none; border: 0; padding: 0; display: inline-flex; gap: 6px; align-items: center; text-align: left; }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+.pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); font-weight: 600; letter-spacing: 0.03em; }
+.pill.example { border-style: dashed; }
+
+/* editor drawer */
+.drawer { position: fixed; right: 0; top: 0; bottom: 0; width: min(400px, 100%); background: var(--surface); border-left: 1px solid var(--line); box-shadow: -12px 0 30px rgba(0,0,0,0.15); padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) 16px; overflow-y: auto; display: grid; gap: 14px; align-content: start; z-index: 10; }
+.hint { font-size: 13px; color: var(--muted); background: var(--sunk); border-radius: 6px; padding: 8px 10px; }
+
+/* calendar */
+.calwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.cal { min-width: 760px; display: grid; grid-template-columns: 150px 1fr; font-size: 13px; }
+.cal .name { padding: 5px 10px; border-top: 1px solid var(--sunk); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+.cal .track { position: relative; border-top: 1px solid var(--sunk); height: 30px; }
+.cal .months { position: relative; height: 28px; }
+.cal .months span { position: absolute; top: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.cal .gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--sunk); }
+.cal .bar { position: absolute; height: 8px; border-radius: 3px; }
+.cal .bar.r0 { top: 5px; } .cal .bar.r1 { top: 15px; }
+.cal .mark { position: absolute; top: 0; bottom: 0; width: 2px; pointer-events: none; }
+.calkey { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; align-items: center; }
+.toggle { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.toggle button { border: 0; background: var(--surface); padding: 4px 10px; font-size: 13px; }
+.toggle button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+table.plist { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.plist th { text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+table.plist td { padding: 7px 8px; border-bottom: 1px solid var(--sunk); vertical-align: top; }
+table.plist tr.click { cursor: pointer; }
+table.plist tr.click:hover td { background: var(--sunk); }
+.tablewrap { overflow-x: auto; }
+
+@media (prefers-reduced-motion: no-preference) { .drawer { animation: slide .18s ease-out; } @keyframes slide { from { transform: translateX(30px); opacity: .6; } } }
+@media (max-width: 520px) { h1 { font-size: 24px; } .cal { grid-template-columns: 110px 1fr; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label">Season <span id="yr" class="num"></span></div>
+      <h1>Garden Planner</h1>
+    </div>
+    <div class="season">
+      <div class="fact"><span class="label">Zone</span><span class="v" id="f-zone">6b</span></div>
+      <div class="fact"><span class="label">Last spring frost</span><span class="v" id="f-lf">Apr 20</span></div>
+      <div class="fact"><span class="label">First fall frost</span><span class="v" id="f-ff">Oct 20</span></div>
+      <div class="fact"><span class="label">Frost-free</span><span class="v" id="f-days">183 days</span></div>
+      <button class="btn small" id="editSettings">Edit location</button>
+    </div>
+  </header>
+
+  <div id="notices" class="wrap" style="padding:0;gap:8px"></div>
+
+  <section class="settings" id="settingsPanel" hidden>
+    <h2>Your growing season</h2>
+    <p class="muted" style="margin:0">Pick your USDA zone to fill typical frost dates, then adjust them to your local averages if you know them. Every sowing date on this page is counted from these two dates.</p>
+    <div class="formgrid">
+      <label class="field"><span class="label">Location</span><input id="s-loc" placeholder="City or region"></label>
+      <label class="field"><span class="label">Zone</span><select id="s-zone"></select></label>
+      <label class="field"><span class="label">Last spring frost</span><input id="s-lf" type="date"></label>
+      <label class="field"><span class="label">First fall frost</span><input id="s-ff" type="date"></label>
+    </div>
+    <div class="row"><button class="btn primary" id="s-save">Save season</button><button class="btn" id="s-cancel">Cancel</button></div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="week" aria-selected="true">This week</button>
+    <button class="tab" role="tab" data-tab="beds" aria-selected="false">Beds</button>
+    <button class="tab" role="tab" data-tab="calendar" aria-selected="false">Calendar</button>
+    <button class="tab" role="tab" data-tab="log" aria-selected="false">Plantings</button>
+    <button class="tab" role="tab" data-tab="orchard" aria-selected="false">Fruit trees</button>
+  </nav>
+
+  <section id="tab-week" class="week"></section>
+  <section id="tab-beds" hidden></section>
+  <section id="tab-calendar" hidden></section>
+  <section id="tab-log" hidden></section>
+  <section id="tab-orchard" hidden></section>
+</div>
+
+<aside class="drawer" id="drawer" hidden></aside>
+
+<script>
+(() => {
+/* ---------- crop reference: weeks relative to last spring frost (LF) or first fall frost (FF) ---------- */
+const FAM = { night: "Nightshade", brass: "Brassica", allium: "Allium", legume: "Legume", cucurb: "Cucurbit", root: "Root", green: "Leafy green", herb: "Herb", other: "Other" };
+const CROPS = [
+  { id: "tomato", name: "Tomato", ab: "To", fam: "night", indoor: [-8, -6], trans: [1, 3], dtm: 70, dtmFrom: "trans", sq: 1 },
+  { id: "pepper", name: "Pepper", ab: "Pe", fam: "night", indoor: [-10, -8], trans: [2, 4], dtm: 75, dtmFrom: "trans", sq: 1 },
+  { id: "eggplant", name: "Eggplant", ab: "Eg", fam: "night", indoor: [-10, -8], trans: [2, 4], dtm: 80, dtmFrom: "trans", sq: 1 },
+  { id: "potato", name: "Potato", ab: "Po", fam: "night", sow: [-2, 2], dtm: 90, sq: 1 },
+  { id: "lettuce", name: "Lettuce", ab: "Le", fam: "green", indoor: [-6, -4], sow: [-4, 2], trans: [-2, 1], fall: [-8, -4], dtm: 50, sq: 4 },
+  { id: "spinach", name: "Spinach", ab: "Sp", fam: "green", sow: [-6, -2], fall: [-8, -5], dtm: 40, sq: 9 },
+  { id: "chard", name: "Swiss chard", ab: "Ch", fam: "green", sow: [-2, 3], fall: [-10, -8], dtm: 55, sq: 4 },
+  { id: "kale", name: "Kale", ab: "Ka", fam: "brass", indoor: [-8, -6], trans: [-4, -2], sow: [-4, 0], fall: [-12, -8], dtm: 55, sq: 1 },
+  { id: "broccoli", name: "Broccoli", ab: "Br", fam: "brass", indoor: [-8, -6], trans: [-2, 1], fall: [-14, -12], dtm: 65, dtmFrom: "trans", sq: 1 },
+  { id: "cabbage", name: "Cabbage", ab: "Cb", fam: "brass", indoor: [-8, -6], trans: [-3, 0], fall: [-14, -12], dtm: 70, dtmFrom: "trans", sq: 1 },
+  { id: "bokchoy", name: "Bok choy", ab: "BC", fam: "brass", sow: [-4, 0], fall: [-8, -5], dtm: 45, sq: 4 },
+  { id: "arugula", name: "Arugula", ab: "Ar", fam: "green", sow: [-4, 2], fall: [-6, -3], dtm: 40, sq: 9 },
+  { id: "radish", name: "Radish", ab: "Ra", fam: "brass", sow: [-5, 1], fall: [-6, -3], dtm: 25, sq: 16 },
+  { id: "carrot", name: "Carrot", ab: "Ca", fam: "root", sow: [-3, 2], fall: [-12, -9], dtm: 70, sq: 16 },
+  { id: "beet", name: "Beet", ab: "Be", fam: "root", sow: [-3, 2], fall: [-10, -8], dtm: 55, sq: 9 },
+  { id: "onion", name: "Onion (sets)", ab: "On", fam: "allium", sow: [-4, -2], dtm: 100, sq: 9 },
+  { id: "scallion", name: "Green onions", ab: "GO", fam: "allium", sow: [-4, 2], fall: [-10, -8], dtm: 60, sq: 16 },
+  { id: "garlic", name: "Garlic", ab: "Ga", fam: "allium", fall: [-2, 3], dtm: 240, sq: 9 },
+  { id: "bushbean", name: "Green beans (bush)", ab: "BB", fam: "legume", sow: [1, 6], dtm: 55, sq: 9 },
+  { id: "polebean", name: "Green beans (pole)", ab: "PB", fam: "legume", sow: [1, 4], dtm: 65, sq: 8 },
+  { id: "cucumber", name: "Cucumber", ab: "Cu", fam: "cucurb", indoor: [-3, -2], sow: [1, 4], dtm: 60, sq: 2 },
+  { id: "zucchini", name: "Zucchini", ab: "Zu", fam: "cucurb", sow: [1, 4], dtm: 55, sq: 0.25 },
+  { id: "wsquash", name: "Winter squash", ab: "WS", fam: "cucurb", sow: [1, 3], dtm: 95, sq: 0.25 },
+  { id: "corn", name: "Sweet corn", ab: "Co", fam: "other", sow: [1, 4], dtm: 80, sq: 4 },
+  { id: "basil", name: "Basil", ab: "Ba", fam: "herb", indoor: [-6, -4], trans: [1, 3], dtm: 60, dtmFrom: "trans", sq: 4 },
+  { id: "cilantro", name: "Cilantro", ab: "Ci", fam: "herb", sow: [-2, 2], fall: [-8, -4], dtm: 45, sq: 9 },
+  { id: "parsley", name: "Parsley", ab: "Pr", fam: "herb", indoor: [-10, -8], trans: [-2, 1], dtm: 75, dtmFrom: "trans", sq: 4 },
+];
+const PART_SHADE = new Set(["lettuce", "spinach", "chard", "kale", "radish", "beet", "carrot", "arugula", "bokchoy", "scallion", "cilantro", "parsley", "garlic", "onion", "broccoli", "cabbage", "bushbean"]);
+CROPS.forEach(c => c.sun = PART_SHADE.has(c.id) ? "part" : "full");
+const SUN_NOTE = { part: "Grows with 3 to 6 hours of sun", full: "Needs 6 to 8 hours of direct sun" };
+
+/* ---------- fruit tree care by month (upper South, zones 6b to 7b) ---------- */
+const FRUIT = {
+  apple: { name: "Apple", bear: "2 to 5 years for dwarf trees, 4 to 8 for standard", tasks: [
+    { m: [2, 3], k: "prune", t: "Prune while dormant: remove dead, crossing and upright water sprouts" },
+    { m: [3, 3], k: "spray", t: "Dormant oil at green tip for scale and mite eggs" },
+    { m: [4, 5], k: "watch", t: "Watch for cedar apple rust and fire blight at bloom" },
+    { m: [5, 5], k: "thin", t: "Thin to one fruit per cluster, about 6 inches apart" },
+    { m: [5, 7], k: "protect", t: "Bag young fruit or spray for codling moth" },
+    { m: [8, 10], k: "harvest", t: "Harvest when seeds turn brown and fruit twists off easily" },
+    { m: [11, 11], k: "care", t: "Rake leaves and fallen fruit to cut scab and pests next year" } ] },
+  pear: { name: "Pear", bear: "3 to 7 years", tasks: [
+    { m: [2, 3], k: "prune", t: "Prune lightly while dormant; heavy cuts invite fire blight" },
+    { m: [4, 6], k: "watch", t: "Fire blight: cut out blackened shoots 8 to 12 inches below, on a dry day" },
+    { m: [5, 5], k: "thin", t: "Thin to one or two fruit per cluster" },
+    { m: [8, 9], k: "harvest", t: "Pick mature but still hard, then ripen indoors" },
+    { m: [11, 11], k: "care", t: "Clear fallen fruit and leaves" } ] },
+  cherry: { name: "Cherry", bear: "3 to 5 years for tart, 4 to 7 for sweet", tasks: [
+    { m: [2, 3], k: "prune", t: "Light dormant prune for shape (sweet cherries can wait until after harvest)" },
+    { m: [5, 6], k: "protect", t: "Net the tree before fruit colors; birds take it first" },
+    { m: [5, 6], k: "harvest", t: "Harvest when fully colored and sweet" },
+    { m: [7, 7], k: "prune", t: "Summer prune after harvest; wounds heal faster in dry weather" },
+    { m: [11, 11], k: "care", t: "Remove shriveled fruit mummies that carry brown rot" } ] },
+  peach: { name: "Peach", bear: "2 to 4 years", tasks: [
+    { m: [1, 2], k: "care", t: "Pull off old fruit mummies and burn or bin them (brown rot)" },
+    { m: [2, 3], k: "spray", t: "Leaf curl spray (copper or lime sulfur) before buds swell" },
+    { m: [3, 4], k: "prune", t: "Prune to an open center around bloom, not in early winter" },
+    { m: [3, 4], k: "protect", t: "Frost watch at bloom: cover small trees with frost cloth on nights under 28°F" },
+    { m: [4, 5], k: "protect", t: "Plum curculio and moths: spray at petal fall and shuck split, or bag fruit" },
+    { m: [5, 5], k: "thin", t: "Thin to 6 to 8 inches apart when fruit is marble size" },
+    { m: [7, 8], k: "harvest", t: "Harvest when the green background color turns yellow" },
+    { m: [9, 10], k: "watch", t: "Check the trunk base for gummy sap and sawdust (peach tree borer)" },
+    { m: [11, 12], k: "spray", t: "Leaf curl spray after leaves drop, if you skip the late winter one" } ] },
+  fig: { name: "Fig", bear: "2 to 3 years", tasks: [
+    { m: [3, 4], k: "prune", t: "Cut back only winter-killed wood once new growth shows" },
+    { m: [6, 9], k: "care", t: "Water deeply in dry spells; figs drop fruit when stressed" },
+    { m: [8, 10], k: "harvest", t: "Harvest when fruit droops and feels soft" },
+    { m: [11, 12], k: "protect", t: "Mulch the base heavily; wrap young trees before hard freezes" } ] },
+};
+const FRUIT_ALL = [
+  { m: [3, 3], k: "care", t: "Light feeding and fresh mulch ring, kept off the trunk" },
+  { m: [6, 9], k: "care", t: "Water young trees deeply once a week in dry spells" } ];
+const TK = { prune: "Prune", spray: "Spray", protect: "Protect", thin: "Thin", harvest: "Harvest", watch: "Watch", care: "Care" };
+const TKVAR = { prune: "--f-allium", spray: "--f-herb", protect: "--w-fall", thin: "--f-legume", harvest: "--w-harvest", watch: "--f-night", care: "--f-other" };
+const inMonth = (task, m) => task.m[0] <= m && m <= task.m[1];
+
+const CROP = Object.fromEntries(CROPS.map(c => [c.id, c]));
+const ZONES = { "3a": ["05-25", "09-10"], "3b": ["05-20", "09-15"], "4a": ["05-15", "09-20"], "4b": ["05-10", "09-25"], "5a": ["05-05", "10-01"], "5b": ["04-30", "10-08"], "6a": ["04-25", "10-15"], "6b": ["04-20", "10-20"], "7a": ["04-10", "10-25"], "7b": ["04-01", "11-01"], "8a": ["03-25", "11-10"], "8b": ["03-15", "11-15"], "9a": ["03-01", "11-25"], "9b": ["02-20", "12-05"], "10a": ["02-01", "12-10"], "10b": ["01-25", "12-15"] };
+const STATUSES = { planned: "Planned", growing: "Growing", harvesting: "Harvesting", done: "Finished" };
+const METHODS = { seed: "Direct sown", transplant: "Transplanted", indoor: "Started indoors" };
+const DEFAULT_SETTINGS = { zone: "6b", lastFrost: "04-20", firstFrost: "10-20", location: "", isDefault: true };
+
+/* ---------- state ---------- */
+let db = null, live = false;
+let settings = { ...DEFAULT_SETTINGS };
+let beds = [], plantings = [], trees = [];
+let tab = "week", calMode = "mine";
+let editor = null; // { kind: 'planting'|'bed', data, id }
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const YEAR = today.getFullYear();
+
+/* ---------- dates ---------- */
+const DAY = 864e5;
+const md = (s, y = YEAR) => { const [m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => new Date(d.getTime() + n * DAY);
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const parseIso = s => { if (!s) return null; const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const fmt = d => `${MON[d.getMonth()]} ${d.getDate()}`;
+const fmtY = d => d.getFullYear() === YEAR ? fmt(d) : `${fmt(d)}, ${d.getFullYear()}`;
+const LF = () => md(settings.lastFrost);
+const FF = () => md(settings.firstFrost);
+
+function windows(c) {
+  const out = [];
+  const lf = LF(), ff = FF();
+  const w = (kind, base, r) => out.push({ kind, start: addDays(base, r[0] * 7), end: addDays(base, r[1] * 7) });
+  if (c.indoor) w("indoor", lf, c.indoor);
+  if (c.sow) w("sow", lf, c.sow);
+  if (c.trans) w("trans", lf, c.trans);
+  if (c.fall) w("fall", ff, c.fall);
+  return out;
+}
+const KIND = { indoor: "Start indoors", sow: "Sow outside", trans: "Transplant out", fall: "Fall planting", harvest: "Harvest" };
+const KVAR = { indoor: "--w-indoor", sow: "--w-sow", trans: "--w-trans", fall: "--w-fall", harvest: "--w-harvest" };
+
+function harvestDate(p) {
+  const c = CROP[p.crop]; const d = parseIso(p.plantedOn);
+  if (!c || !d) return null;
+  // indoor starts: maturity counts from transplant, roughly 6 weeks after starting
+  const offset = (p.method === "indoor" && c.dtmFrom === "trans") ? 42 : 0;
+  return addDays(d, c.dtm + offset);
+}
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+const famColor = c => `var(--f-${c ? c.fam : "other"})`;
+const perSq = c => c.sq >= 1 ? `${c.sq} per sq ft` : `1 per ${Math.round(1 / c.sq)} sq ft`;
+const activePlantings = () => plantings.filter(p => p.status !== "done");
+const bedName = id => beds.find(b => b.id === id)?.name || "No bed";
+
+/* ---------- persistence ---------- */
+async function saveDoc(path, data) {
+  if (!db) { flash("Saving is off in this view, so this change will not be kept."); return; }
+  try { await db.doc(path).set(data); }
+  catch (e) { flash(e?.code === "permission_denied" ? "You can view this garden but not change it." : "That change did not save. Check your connection and try again."); throw e; }
+}
+async function deleteDoc(path) {
+  if (!db) return;
+  try { await db.doc(path).delete(); } catch (e) { flash("That delete did not go through. Try again."); }
+}
+let flashTimer;
+function flash(msg) {
+  const n = $("#notices");
+  let el = document.getElementById("flash");
+  if (!el) { el = document.createElement("div"); el.id = "flash"; el.className = "notice"; n.prepend(el); }
+  el.textContent = msg;
+  clearTimeout(flashTimer); flashTimer = setTimeout(() => el.remove(), 6000);
+}
+
+/* ---------- header + notices ---------- */
+function renderHeader() {
+  $("#yr").textContent = YEAR;
+  $("#f-zone").textContent = settings.zone + (settings.location ? ` · ${settings.location}` : "");
+  $("#f-lf").textContent = fmt(LF());
+  $("#f-ff").textContent = fmt(FF());
+  $("#f-days").textContent = Math.round((FF() - LF()) / DAY) + " days";
+  const n = $("#notices");
+  [...n.querySelectorAll(".static")].forEach(e => e.remove());
+  if (settings.isDefault) {
+    const d = document.createElement("div"); d.className = "notice static";
+    d.innerHTML = `<span>These dates are a starting guess for zone ${esc(settings.zone)}. Set your own zone and frost dates so every window below fits your garden.</span><button class="btn small primary" data-act="settings">Set my season</button>`;
+    n.append(d);
+  }
+  if (beds.some(b => b.example) || plantings.some(p => p.example)) {
+    const d = document.createElement("div"); d.className = "notice static";
+    d.innerHTML = `<span>The beds and plantings marked <span class="pill example">Example</span> are sample data so you can see how it works.</span><button class="btn small danger" data-act="clearExamples">Remove examples</button>`;
+    n.append(d);
+  }
+  if (!live) {
+    const d = document.createElement("div"); d.className = "notice static";
+    d.innerHTML = `<span>${db === null && ready ? "Saving is off in this view. Open the page signed in to claude.ai to keep your garden." : "Connecting to your saved garden…"}</span>`;
+    n.append(d);
+  }
+}
+
+/* ---------- this week ---------- */
+function renderWeek() {
+  const el = $("#tab-week");
+  const horizon = addDays(today, 14);
+  const now = [], soon = [];
+  for (const c of CROPS) for (const w of windows(c)) {
+    if (w.start <= today && w.end >= addDays(today, -3)) now.push({ c, w });
+    else if (w.start > today && w.start <= horizon) soon.push({ c, w });
+  }
+  const byKind = list => { const g = {}; list.forEach(x => (g[x.w.kind] ||= []).push(x)); return g; };
+  const mine = new Set(plantings.map(p => p.crop));
+  const shady = beds.length > 0 && beds.every(b => b.sun === "part" || b.sun === "shade");
+  if (shady) { const keep = x => x.c.sun === "part" || mine.has(x.c.id); now.splice(0, now.length, ...now.filter(keep)); soon.splice(0, soon.length, ...soon.filter(keep)); }
+  const taskList = (list, showStart) => {
+    if (!list.length) return `<p class="empty">Nothing in this window.</p>`;
+    const g = byKind(list);
+    return Object.keys(KIND).filter(k => g[k]).map(k => `
+      <div class="group"><div class="label">${KIND[k]}</div><ul class="tasks">
+      ${g[k].sort((a, b) => (mine.has(b.c.id) - mine.has(a.c.id)) || a.c.name.localeCompare(b.c.name)).map(({ c, w }) => `
+        <li class="task"><span class="dot" style="background:var(${KVAR[k]})"></span>
+          <span>${esc(c.name)}${mine.has(c.id) ? ` <span class="pill">In garden</span>` : ""}${shady && c.sun === "part" ? ` <span class="pill">Part shade OK</span>` : ""}</span>
+          <span class="when">${showStart ? "from " + fmt(w.start) : "until " + fmt(w.end)}</span></li>`).join("")}
+      </ul></div>`).join("");
+  };
+
+  const act = activePlantings().map(p => ({ p, h: harvestDate(p) })).filter(x => x.h);
+  const ready = act.filter(x => x.h <= today).sort((a, b) => a.h - b.h);
+  const coming = act.filter(x => x.h > today && x.h <= addDays(today, 30)).sort((a, b) => a.h - b.h);
+  const frostIn = Math.round((FF() - today) / DAY);
+  const lfIn = Math.round((LF() - today) / DAY);
+  let frostLine = "";
+  if (frostIn >= 0 && frostIn <= 21) frostLine = `First fall frost is expected in <b class="num">${frostIn}</b> days (${fmt(FF())}). Cover or harvest tender crops like tomatoes, peppers, basil and squash.`;
+  else if (lfIn >= 0 && lfIn <= 28) frostLine = `Last spring frost is expected in <b class="num">${lfIn}</b> days (${fmt(LF())}). Hold tender transplants indoors and harden them off.`;
+  else if (today > FF()) frostLine = `You are past the average first frost (${fmt(FF())}). Hardy greens, garlic and cover crops are what's left to tend.`;
+
+  const plantRow = ({ p, h }) => { const c = CROP[p.crop]; return `<li class="task"><span class="dot" style="background:${famColor(c)}"></span>
+      <span><button class="linkbtn" data-edit-planting="${esc(p.id)}">${esc(c?.name || p.crop)}${p.variety ? " · " + esc(p.variety) : ""}</button> <span class="muted">in ${esc(bedName(p.bedId))}</span></span>
+      <span class="when">${fmt(h)}</span></li>`; };
+
+  el.innerHTML = `
+    <div class="panel" style="grid-column:1/-1">
+      <div class="label">Week of ${fmt(today)}</div>
+      ${frostLine ? `<p style="margin:0">${frostLine}</p>` : `<p style="margin:0" class="muted">No frost dates close by. Keep an eye on the windows below.</p>`}
+    </div>
+    <div class="panel"><h2>Do now</h2>${taskList(now, false)}</div>
+    <div class="panel"><h2>Next two weeks</h2>${taskList(soon, true)}</div>
+    <div class="panel"><h2>From your beds</h2>
+      <div class="group"><div class="label">Ready to harvest</div>
+        ${ready.length ? `<ul class="tasks">${ready.map(plantRow).join("")}</ul>` : `<p class="empty">Nothing has reached its maturity date yet.</p>`}</div>
+      <div class="group"><div class="label">Maturing in the next 30 days</div>
+        ${coming.length ? `<ul class="tasks">${coming.map(plantRow).join("")}</ul>` : `<p class="empty">Nothing due in the next month.</p>`}</div>
+      <div class="row"><button class="btn primary" data-act="newPlanting">Log a planting</button></div>
+    </div>
+    ${orchardWeek()}
+    ${shady ? `<p class="muted" style="grid-column:1/-1;font-size:13px;margin:0">Your beds get part sun, so this list leaves out crops that need full sun. The Calendar tab still shows every crop.</p>` : ""}`;
+}
+function treeTasks(m) {
+  const kinds = [...new Set(trees.map(t => t.kind))].filter(k => FRUIT[k]);
+  const out = [];
+  kinds.forEach(k => FRUIT[k].tasks.filter(x => inMonth(x, m)).forEach(x => out.push({ ...x, who: trees.filter(t => t.kind === k).length > 1 ? { apple: "Apples", pear: "Pears", cherry: "Cherries", peach: "Peaches", fig: "Figs" }[k] : FRUIT[k].name })));
+  if (kinds.length) FRUIT_ALL.filter(x => inMonth(x, m)).forEach(x => out.push({ ...x, who: "All trees" }));
+  return out;
+}
+function orchardWeek() {
+  if (!trees.length) return "";
+  const m = today.getMonth() + 1;
+  const list = treeTasks(m);
+  return `<div class="panel"><h2>Fruit trees this month</h2>
+    ${list.length ? `<ul class="tasks">${list.map(x => `<li class="task"><span class="dot" style="background:var(${TKVAR[x.k]})"></span><span><b>${esc(x.who)}</b> · ${esc(x.t)}</span><span class="when">${TK[x.k]}</span></li>`).join("")}</ul>` : `<p class="empty">No tree jobs this month.</p>`}
+    <div class="row"><button class="btn" data-tab="orchard">Open fruit trees</button></div></div>`;
+}
+
+/* ---------- orchard ---------- */
+function renderOrchard() {
+  const el = $("#tab-orchard");
+  const m = today.getMonth() + 1;
+  const sorted = [...trees].sort((a, b) => (a.kind || "").localeCompare(b.kind || "") || (a.label || "").localeCompare(b.label || ""));
+  const kinds = [...new Set(trees.map(t => t.kind))].filter(k => FRUIT[k]);
+  const yearGrid = kinds.length ? `<div class="calwrap"><div class="cal" style="grid-template-columns:110px 1fr">
+      <div class="name label" style="border:0">Tree</div>
+      <div class="months">${MON.map((mo, i) => `<span style="left:calc(${i / 12 * 100}% + 4px)">${mo}</span>`).join("")}</div>
+      ${kinds.map(k => { const ts = FRUIT[k].tasks; const rows = ts.length > 6 ? 3 : 2;
+        return `<div class="name">${FRUIT[k].name}</div><div class="track" style="height:${rows * 10 + 12}px">${MON.map((_, i) => `<div class="gridline" style="left:${i / 12 * 100}%"></div>`).join("")}
+        ${ts.map((x, j) => `<div class="bar" title="${TK[x.k]}: ${esc(x.t)}" style="top:${5 + (j % rows) * 10}px;left:${(x.m[0] - 1) / 12 * 100}%;width:${(x.m[1] - x.m[0] + 1) / 12 * 100 - .4}%;background:var(${TKVAR[x.k]})"></div>`).join("")}
+        <div class="mark" style="left:${(today - new Date(YEAR, 0, 1)) / (new Date(YEAR + 1, 0, 1) - new Date(YEAR, 0, 1)) * 100}%;background:var(--today)"></div></div>`; }).join("")}
+    </div></div>
+    <div class="calkey">${Object.keys(TK).map(k => `<span class="row" style="gap:6px"><span class="sw" style="background:var(${TKVAR[k]})"></span>${TK[k]}</span>`).join("")}</div>` : "";
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <p class="muted" style="margin:0;max-width:62ch">Care jobs by month for the trees you grow. Keep notes on bloom, frost and fruit set so you can see what changes year to year.</p>
+      <button class="btn primary" data-act="newTree">Add tree</button></div>
+    ${sorted.length ? `<div class="beds" style="margin-bottom:20px">${sorted.map(t => { const f = FRUIT[t.kind]; const now = f ? f.tasks.filter(x => inMonth(x, m)) : []; const log = (t.log || []).slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      return `<article class="bed">
+        <div class="bedhead"><div><h3>${esc(t.label || f?.name || "Tree")}</h3>
+          <div class="muted mono" style="font-size:12px">${esc(f?.name || t.kind)}${t.variety ? " · " + esc(t.variety) : ""}${t.planted ? " · planted " + esc(t.planted) : ""}</div></div>
+          <button class="btn small" data-edit-tree="${esc(t.id)}">Edit</button></div>
+        ${now.length ? `<ul class="tasks" style="font-size:14px">${now.map(x => `<li class="task"><span class="dot" style="background:var(${TKVAR[x.k]})"></span><span>${esc(x.t)}</span><span class="when">${TK[x.k]}</span></li>`).join("")}</ul>` : `<p class="empty" style="margin:0">Nothing to do this month.</p>`}
+        ${f ? `<div class="muted" style="font-size:13px">Typical time to first fruit: ${f.bear}.</div>` : ""}
+        ${t.notes ? `<p style="margin:0;font-size:14px">${esc(t.notes)}</p>` : ""}
+        ${log.length ? `<div class="group"><div class="label">Notes log</div><ul class="tasks" style="font-size:14px">${log.slice(0, 3).map(e => `<li class="task"><span class="dot" style="background:var(--line)"></span><span>${esc(e.text)}</span><span class="when">${e.date ? fmtY(parseIso(e.date)) : ""}</span></li>`).join("")}</ul></div>` : ""}
+      </article>`; }).join("")}</div>` : `<div class="panel" style="margin-bottom:20px"><h2>No fruit trees yet</h2><p class="muted" style="margin:0">Add apple, pear, cherry, peach or fig trees to get their care jobs month by month.</p></div>`}
+    ${yearGrid ? `<h2 style="margin-bottom:10px">Care through the year</h2>${yearGrid}` : ""}`;
+}
+
+/* ---------- beds ---------- */
+function cellMap(bedId, excludeId) {
+  const m = {};
+  activePlantings().filter(p => p.bedId === bedId && p.id !== excludeId).forEach(p => (p.cells || []).forEach(i => m[i] = p));
+  return m;
+}
+function renderBeds() {
+  const el = $("#tab-beds");
+  const sorted = [...beds].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+  const editingP = editor?.kind === "planting" ? editor : null;
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <p class="muted" style="margin:0;max-width:60ch">Each square is one square foot. Click an empty square to plant there, or a planted square to edit that planting.</p>
+      <div class="row"><button class="btn" data-act="newBed">Add bed</button><button class="btn primary" data-act="newPlanting">Log a planting</button></div>
+    </div>
+    ${sorted.length ? `<div class="beds">${sorted.map(b => {
+      const w = Math.max(1, Math.min(24, b.width | 0)), l = Math.max(1, Math.min(40, b.length | 0));
+      const m = cellMap(b.id, editingP?.id);
+      const target = editingP && editingP.data.bedId === b.id;
+      const sel = target ? new Set(editingP.data.cells) : new Set();
+      const here = activePlantings().filter(p => p.bedId === b.id);
+      let cells = "";
+      for (let i = 0; i < w * l; i++) {
+        const p = m[i]; const c = p && CROP[p.crop];
+        if (sel.has(i)) { const ec = CROP[editingP.data.crop]; cells += `<button class="cell filled sel" style="background:${famColor(ec)}" data-cell="${i}" data-bed="${esc(b.id)}" aria-label="Square ${i + 1}, selected">${ec ? ec.ab : ""}</button>`; }
+        else if (p) cells += `<button class="cell filled" style="background:${famColor(c)}" data-cell="${i}" data-bed="${esc(b.id)}" title="${esc(c?.name)}${p.variety ? " · " + esc(p.variety) : ""}" aria-label="Square ${i + 1}: ${esc(c?.name)}">${c ? c.ab : "?"}</button>`;
+        else cells += `<button class="cell ${target ? "pending" : ""}" data-cell="${i}" data-bed="${esc(b.id)}" aria-label="Square ${i + 1}, empty"></button>`;
+      }
+      const used = Object.keys(m).length;
+      return `<article class="bed ${target ? "target" : ""}">
+        <div class="bedhead"><div><h3>${esc(b.name)} ${b.example ? `<span class="pill example">Example</span>` : ""}</h3>
+          <div class="muted mono" style="font-size:12px">${w} × ${l} ft · ${used}/${w * l} sq ft planted · ${esc({ full: "Full sun", part: "Part sun", shade: "Shade" }[b.sun] || "Full sun")}</div></div>
+          <button class="btn small" data-edit-bed="${esc(b.id)}">Edit</button></div>
+        <div class="gridwrap"><div class="grid" style="grid-template-columns:repeat(${w}, minmax(30px, 40px))">${cells}</div></div>
+        ${here.length ? `<div class="legend">${here.map(p => { const c = CROP[p.crop]; return `<button data-edit-planting="${esc(p.id)}"><span class="sw" style="background:${famColor(c)}"></span>${esc(c?.name || p.crop)}${p.variety ? " · " + esc(p.variety) : ""} <span class="muted mono" style="font-size:12px">${(p.cells || []).length} sq</span></button>`; }).join("")}</div>` : `<p class="empty" style="margin:0">Nothing growing here yet.</p>`}
+        ${b.notes ? `<p class="muted" style="margin:0;font-size:14px">${esc(b.notes)}</p>` : ""}
+      </article>`;
+    }).join("")}</div>` : `<div class="panel"><h2>No beds yet</h2><p class="muted" style="margin:0">Add your first bed with its size in feet. Raised beds, in-ground rows and containers all work: a 2×1 bed is a pair of pots.</p><div><button class="btn primary" data-act="newBed">Add bed</button></div></div>`}`;
+}
+
+/* ---------- calendar ---------- */
+function renderCalendar() {
+  const el = $("#tab-calendar");
+  const y0 = new Date(YEAR, 0, 1), y1 = new Date(YEAR + 1, 0, 1);
+  const span = y1 - y0;
+  const pct = d => Math.max(0, Math.min(100, (d - y0) / span * 100));
+  const mine = new Set(plantings.map(p => p.crop));
+  const list = calMode === "mine" && mine.size ? CROPS.filter(c => mine.has(c.id)) : CROPS;
+  const marks = [[LF(), "--w-sow", "Last frost"], [FF(), "--w-fall", "First frost"], [today, "--today", "Today"]];
+  const markHtml = marks.map(([d, v, t]) => `<div class="mark" title="${t} ${fmt(d)}" style="left:${pct(d)}%;background:var(${v});opacity:${v === "--today" ? 1 : .55}"></div>`).join("");
+  const gl = MON.map((_, i) => `<div class="gridline" style="left:${pct(new Date(YEAR, i, 1))}%"></div>`).join("");
+  const rows = list.map(c => {
+    const ws = windows(c);
+    const bars = ws.map(w => { const row = (w.kind === "indoor" || w.kind === "fall") ? 0 : 1; const l = pct(w.start), r = pct(addDays(w.end, 7));
+      return `<div class="bar r${row}" title="${KIND[w.kind]}: ${fmt(w.start)} to ${fmt(w.end)}" style="left:${l}%;width:${Math.max(.6, r - l)}%;background:var(${KVAR[w.kind]})"></div>`; }).join("");
+    const harv = plantings.filter(p => p.crop === c.id && p.status !== "done").map(p => { const h = harvestDate(p); if (!h) return "";
+      const l = pct(h), r = pct(addDays(h, 21)); return `<div class="bar r1" title="Harvest from ${fmtY(h)}" style="left:${l}%;width:${Math.max(.6, r - l)}%;background:var(--w-harvest);opacity:.9"></div>`; }).join("");
+    return `<div class="name"><span class="sw" style="background:${famColor(c)}"></span>${esc(c.name)}</div><div class="track">${gl}${bars}${harv}${markHtml}</div>`;
+  }).join("");
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <div class="calkey">${Object.keys(KIND).map(k => `<span class="row" style="gap:6px"><span class="sw" style="background:var(${KVAR[k]})"></span>${KIND[k]}</span>`).join("")}
+        <span class="row" style="gap:6px"><span class="sw" style="background:var(--today);width:3px;height:14px"></span>Today</span></div>
+      <div class="toggle" role="group" aria-label="Crops shown"><button data-cal="mine" aria-pressed="${calMode === "mine"}">My crops</button><button data-cal="all" aria-pressed="${calMode === "all"}">All crops</button></div>
+    </div>
+    ${calMode === "mine" && !mine.size ? `<p class="muted">You have not logged any plantings yet, so this shows every crop.</p>` : ""}
+    <div class="calwrap"><div class="cal">
+      <div class="name label" style="border:0">Crop</div>
+      <div class="months">${MON.map((m, i) => `<span style="left:calc(${pct(new Date(YEAR, i, 1))}% + 4px)">${m}</span>`).join("")}</div>
+      ${rows}
+    </div></div>
+    <p class="muted" style="font-size:13px">Windows are typical ranges counted from your frost dates. Harvest bars come from your logged plantings and the crop's days to maturity.</p>`;
+}
+
+/* ---------- plantings log ---------- */
+function renderLog() {
+  const el = $("#tab-log");
+  const sorted = [...plantings].sort((a, b) => (b.plantedOn || "").localeCompare(a.plantedOn || ""));
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><p class="muted" style="margin:0">Every planting this season, newest first. Mark one Finished when the bed space frees up.</p>
+      <button class="btn primary" data-act="newPlanting">Log a planting</button></div>
+    ${sorted.length ? `<div class="tablewrap panel" style="padding:0"><table class="plist"><thead><tr><th>Crop</th><th>Bed</th><th>Planted</th><th>Method</th><th>Harvest from</th><th>Status</th></tr></thead><tbody>
+    ${sorted.map(p => { const c = CROP[p.crop]; const h = harvestDate(p); const d = parseIso(p.plantedOn); return `<tr class="click" data-edit-planting="${esc(p.id)}" tabindex="0">
+      <td><span class="sw" style="background:${famColor(c)}"></span> ${esc(c?.name || p.crop)}${p.variety ? ` <span class="muted">· ${esc(p.variety)}</span>` : ""} ${p.example ? `<span class="pill example">Example</span>` : ""}</td>
+      <td>${esc(bedName(p.bedId))}</td><td class="num">${d ? fmtY(d) : "–"}</td><td>${METHODS[p.method] || ""}</td>
+      <td class="num">${h ? fmtY(h) : "–"}</td><td><span class="pill">${STATUSES[p.status] || p.status}</span></td></tr>`; }).join("")}
+    </tbody></table></div>` : `<div class="panel"><h2>No plantings yet</h2><p class="muted" style="margin:0">Log what you sow or transplant and the harvest dates fill in from the crop's days to maturity.</p></div>`}`;
+}
+
+/* ---------- drawer editors ---------- */
+function openPlanting(p, presetBed, presetCell) {
+  const data = p ? JSON.parse(JSON.stringify(p)) : {
+    crop: "lettuce", variety: "", bedId: presetBed || beds[0]?.id || "", cells: presetCell != null ? [presetCell] : [],
+    plantedOn: iso(today), method: "seed", status: "growing", notes: ""
+  };
+  if (!data.cells) data.cells = [];
+  editor = { kind: "planting", id: p?.id || null, data };
+  if (tab !== "beds" && presetBed) setTab("beds");
+  renderDrawer(); renderBeds();
+}
+function openBed(b) {
+  editor = { kind: "bed", id: b?.id || null, data: b ? { ...b } : { name: `Bed ${beds.length + 1}`, width: 4, length: 8, sun: "full", notes: "" } };
+  renderDrawer();
+}
+function openTree(t) {
+  editor = { kind: "tree", id: t?.id || null, data: t ? JSON.parse(JSON.stringify(t)) : { kind: "peach", label: "", variety: "", planted: "", notes: "", log: [] } };
+  renderDrawer();
+}
+function closeDrawer() { editor = null; $("#drawer").hidden = true; renderBeds(); }
+
+function renderDrawer() {
+  const d = $("#drawer");
+  if (!editor) { d.hidden = true; return; }
+  d.hidden = false;
+  if (editor.kind === "bed") {
+    const b = editor.data;
+    d.innerHTML = `<div class="row" style="justify-content:space-between"><h2>${editor.id ? "Edit bed" : "New bed"}</h2><button class="btn small" data-act="close">Close</button></div>
+      <label class="field"><span class="label">Name</span><input id="b-name" value="${esc(b.name)}"></label>
+      <div class="formgrid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span class="label">Width (ft)</span><input id="b-w" type="number" min="1" max="24" value="${b.width}"></label>
+        <label class="field"><span class="label">Length (ft)</span><input id="b-l" type="number" min="1" max="40" value="${b.length}"></label></div>
+      <label class="field"><span class="label">Sun</span><select id="b-sun">${[["full", "Full sun (6+ hours)"], ["part", "Part sun (3 to 6 hours)"], ["shade", "Shade (under 3 hours)"]].map(([v, t]) => `<option value="${v}" ${b.sun === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label class="field"><span class="label">Notes</span><textarea id="b-notes" placeholder="Soil, irrigation, what grew here last year">${esc(b.notes)}</textarea></label>
+      <div class="row"><button class="btn primary" data-act="saveBed">Save bed</button>
+      ${editor.id ? `<button class="btn danger" data-act="deleteBed">Delete bed</button>` : ""}</div>
+      ${editor.id ? `<p class="muted" style="font-size:13px;margin:0">Deleting a bed keeps its plantings in the log, listed under "No bed".</p>` : ""}`;
+    return;
+  }
+  if (editor.kind === "tree") {
+    const t = editor.data; const log = (t.log || []).slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    d.innerHTML = `<div class="row" style="justify-content:space-between"><h2>${editor.id ? "Edit tree" : "New tree"}</h2><button class="btn small" data-act="close">Close</button></div>
+      <div class="formgrid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span class="label">Fruit</span><select id="t-kind">${Object.entries(FRUIT).map(([k, f]) => `<option value="${k}" ${t.kind === k ? "selected" : ""}>${f.name}</option>`).join("")}</select></label>
+        <label class="field"><span class="label">Name</span><input id="t-label" value="${esc(t.label)}" placeholder="e.g. Back fence peach"></label>
+        <label class="field"><span class="label">Variety</span><input id="t-variety" value="${esc(t.variety)}" placeholder="e.g. Contender"></label>
+        <label class="field"><span class="label">Year planted</span><input id="t-planted" value="${esc(t.planted)}" inputmode="numeric" placeholder="e.g. 2022"></label></div>
+      <label class="field"><span class="label">Notes</span><textarea id="t-notes" placeholder="Sun, rootstock, problems you've seen">${esc(t.notes)}</textarea></label>
+      <div class="group"><div class="label">Add to the log</div>
+        <div class="row"><input id="t-logdate" type="date" value="${iso(today)}" style="border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 8px">
+        <input id="t-logtext" placeholder="Full bloom, frost hit buds, first fruit…" style="flex:1;min-width:160px;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 8px"></div>
+        ${log.length ? `<ul class="tasks" style="font-size:14px">${log.map(e => `<li class="task"><span class="dot" style="background:var(--line)"></span><span>${esc(e.text)}</span><span class="when">${e.date ? fmtY(parseIso(e.date)) : ""}</span></li>`).join("")}</ul>` : ""}</div>
+      <div class="row"><button class="btn primary" data-act="saveTree">Save tree</button>
+      ${editor.id ? `<button class="btn danger" data-act="deleteTree">Delete tree</button>` : ""}</div>`;
+    return;
+  }
+  const p = editor.data; const c = CROP[p.crop];
+  const h = harvestDate(p);
+  const bedSun = beds.find(b => b.id === p.bedId)?.sun;
+  const ws = c ? windows(c) : [];
+  const plants = c ? Math.max(1, Math.floor(p.cells.length * c.sq)) : 0;
+  d.innerHTML = `<div class="row" style="justify-content:space-between"><h2>${editor.id ? "Edit planting" : "Log a planting"}</h2><button class="btn small" data-act="close">Close</button></div>
+    <div class="formgrid" style="grid-template-columns:1fr 1fr">
+      <label class="field"><span class="label">Crop</span><select id="p-crop">${Object.keys(FAM).map(f => { const cs = CROPS.filter(x => x.fam === f); return cs.length ? `<optgroup label="${FAM[f]}">${cs.map(x => `<option value="${x.id}" ${x.id === p.crop ? "selected" : ""}>${x.name}</option>`).join("")}</optgroup>` : ""; }).join("")}</select></label>
+      <label class="field"><span class="label">Variety</span><input id="p-variety" value="${esc(p.variety)}" placeholder="e.g. Sungold"></label>
+      <label class="field"><span class="label">Bed</span><select id="p-bed"><option value="">No bed</option>${beds.map(b => `<option value="${esc(b.id)}" ${b.id === p.bedId ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select></label>
+      <label class="field"><span class="label">Date</span><input id="p-date" type="date" value="${esc(p.plantedOn)}"></label>
+      <label class="field"><span class="label">Method</span><select id="p-method">${Object.entries(METHODS).map(([v, t]) => `<option value="${v}" ${p.method === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label class="field"><span class="label">Status</span><select id="p-status">${Object.entries(STATUSES).map(([v, t]) => `<option value="${v}" ${p.status === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+    </div>
+    <div class="hint">${p.bedId ? `<b class="num">${p.cells.length}</b> square${p.cells.length === 1 ? "" : "s"} selected in ${esc(bedName(p.bedId))}. Click squares in the bed to add or remove them.${c && p.cells.length ? ` At ${perSq(c)}, that is about <b class="num">${plants}</b> plant${plants === 1 ? "" : "s"}.` : ""}` : "Pick a bed to place this planting on its grid."}</div>
+    ${c && c.sun === "full" && (bedSun === "part" || bedSun === "shade") ? `<div class="notice" style="border-color:var(--danger)">${esc(c.name)} needs full sun, and this bed gets ${bedSun === "part" ? "part sun" : "shade"}. Expect a smaller harvest, or grow it in a container you can move into the sunniest spot.</div>` : ""}
+    ${c ? `<div class="group"><div class="label">${esc(c.name)} at a glance</div>
+      <ul class="tasks" style="font-size:14px">
+        <li class="task"><span class="dot" style="background:${famColor(c)}"></span><span>${FAM[c.fam]} family · ${perSq(c)}</span><span class="when">${c.dtm} days</span></li>
+        <li class="task"><span class="dot" style="background:var(--today)"></span><span>${SUN_NOTE[c.sun]}</span><span class="when"></span></li>
+        ${ws.map(w => `<li class="task"><span class="dot" style="background:var(${KVAR[w.kind]})"></span><span>${KIND[w.kind]}</span><span class="when">${fmt(w.start)} – ${fmt(w.end)}</span></li>`).join("")}
+        ${h ? `<li class="task"><span class="dot" style="background:var(--w-harvest)"></span><span>Expected harvest</span><span class="when">${fmtY(h)}</span></li>` : ""}
+      </ul></div>` : ""}
+    <label class="field"><span class="label">Notes</span><textarea id="p-notes" placeholder="Seed source, spacing, how it did">${esc(p.notes)}</textarea></label>
+    <div class="row"><button class="btn primary" data-act="savePlanting">${editor.id ? "Save changes" : "Save planting"}</button>
+    ${editor.id ? `<button class="btn danger" data-act="deletePlanting">Delete</button>` : ""}</div>`;
+}
+
+function readPlantingForm() {
+  const p = editor.data;
+  p.crop = $("#p-crop").value; p.variety = $("#p-variety").value.trim();
+  const nb = $("#p-bed").value; if (nb !== p.bedId) { p.cells = []; p.bedId = nb; }
+  p.plantedOn = $("#p-date").value; p.method = $("#p-method").value; p.status = $("#p-status").value; p.notes = $("#p-notes").value;
+}
+
+/* ---------- events ---------- */
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
+  ["week", "beds", "calendar", "log", "orchard"].forEach(k => $("#tab-" + k).hidden = k !== t);
+  try { history.replaceState(null, "", "#" + t); } catch (e) {}
+  render();
+}
+
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("button, tr[data-edit-planting]"); if (!t) return;
+  if (t.dataset.tab) return setTab(t.dataset.tab);
+  if (t.dataset.cal) { calMode = t.dataset.cal; return renderCalendar(); }
+  if (t.dataset.editPlanting) return openPlanting(plantings.find(p => p.id === t.dataset.editPlanting));
+  if (t.dataset.editBed) return openBed(beds.find(b => b.id === t.dataset.editBed));
+  if (t.dataset.editTree) return openTree(trees.find(x => x.id === t.dataset.editTree));
+  if (t.dataset.cell != null) {
+    const i = +t.dataset.cell, bedId = t.dataset.bed;
+    if (editor?.kind === "planting") {
+      readPlantingForm();
+      const p = editor.data;
+      if (p.bedId !== bedId) { p.bedId = bedId; p.cells = []; }
+      const occupied = cellMap(bedId, editor.id)[i];
+      if (occupied) { flash(`That square already has ${CROP[occupied.crop]?.name || "a planting"}.`); return; }
+      p.cells = p.cells.includes(i) ? p.cells.filter(x => x !== i) : [...p.cells, i].sort((a, b) => a - b);
+      renderDrawer(); renderBeds(); return;
+    }
+    const occ = cellMap(bedId)[i];
+    return occ ? openPlanting(occ) : openPlanting(null, bedId, i);
+  }
+  const act = t.dataset.act; if (!act) return;
+  if (act === "close") return closeDrawer();
+  if (act === "settings") return openSettings();
+  if (act === "newPlanting") { if (beds.length && tab !== "beds") setTab("beds"); return openPlanting(null, beds[0]?.id); }
+  if (act === "newBed") return openBed(null);
+  if (act === "newTree") return openTree(null);
+  if (act === "saveTree") {
+    const tr = { kind: $("#t-kind").value, label: $("#t-label").value.trim(), variety: $("#t-variety").value.trim(), planted: $("#t-planted").value.trim(), notes: $("#t-notes").value, log: [...(editor.data.log || [])] };
+    const lt = $("#t-logtext").value.trim(); if (lt) tr.log.push({ date: $("#t-logdate").value || iso(today), text: lt });
+    if (!tr.label) tr.label = FRUIT[tr.kind].name;
+    const id = editor.id || "tree-" + Math.random().toString(36).slice(2, 9);
+    upsertLocal(trees, { id, ...tr }); closeDrawer(); render();
+    try { await saveDoc("trees/" + id, tr); flash("Tree saved."); } catch (e) {}
+    return;
+  }
+  if (act === "saveBed") {
+    const b = { name: $("#b-name").value.trim() || "Bed", width: Math.max(1, Math.min(24, +$("#b-w").value || 4)), length: Math.max(1, Math.min(40, +$("#b-l").value || 8)), sun: $("#b-sun").value, notes: $("#b-notes").value, order: editor.data.order ?? beds.length, example: false };
+    const id = editor.id || "bed-" + Math.random().toString(36).slice(2, 9);
+    // shrinking a bed drops squares that no longer exist
+    const max = b.width * b.length;
+    const changed = plantings.filter(p => p.bedId === id && (p.cells || []).some(c => c >= max));
+    upsertLocal(beds, { id, ...b }); closeDrawer(); render();
+    try { await saveDoc("beds/" + id, b); for (const p of changed) { const { id: pid, ...rest } = p; await saveDoc("plantings/" + pid, { ...rest, cells: p.cells.filter(c => c < max) }); } flash("Bed saved."); } catch (e) {}
+    return;
+  }
+  if (act === "deleteBed" || act === "deletePlanting" || act === "deleteTree") {
+    if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Click again to delete"; setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); t.textContent = act === "deleteBed" ? "Delete bed" : act === "deleteTree" ? "Delete tree" : "Delete"; } }, 4000); return; }
+    const id = editor.id, coll = { deleteBed: "beds", deletePlanting: "plantings", deleteTree: "trees" }[act];
+    if (coll === "beds") beds = beds.filter(b => b.id !== id); else if (coll === "trees") trees = trees.filter(x => x.id !== id); else plantings = plantings.filter(p => p.id !== id);
+    closeDrawer(); render(); await deleteDoc(coll + "/" + id); flash("Deleted."); return;
+  }
+  if (act === "savePlanting") {
+    readPlantingForm();
+    const { ...p } = editor.data; delete p.id; p.example = false;
+    if (!p.plantedOn) { flash("Add the date you planted or plan to plant."); return; }
+    const id = editor.id || "pl-" + Math.random().toString(36).slice(2, 9);
+    upsertLocal(plantings, { id, ...p }); closeDrawer(); render();
+    try { await saveDoc("plantings/" + id, p); flash("Planting saved."); } catch (e) {}
+    return;
+  }
+  if (act === "clearExamples") {
+    if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Click again to remove"; return; }
+    const eb = beds.filter(b => b.example), ep = plantings.filter(p => p.example);
+    beds = beds.filter(b => !b.example); plantings = plantings.filter(p => !p.example); render();
+    for (const b of eb) await deleteDoc("beds/" + b.id);
+    for (const p of ep) await deleteDoc("plantings/" + p.id);
+    return;
+  }
+});
+document.addEventListener("change", ev => {
+  if (editor?.kind === "planting" && ev.target.closest("#drawer") && ["p-crop", "p-bed", "p-date", "p-method"].includes(ev.target.id)) { readPlantingForm(); renderDrawer(); renderBeds(); }
+  if (ev.target.id === "s-zone") { const z = ZONES[ev.target.value]; if (z) { $("#s-lf").value = iso(md(z[0])); $("#s-ff").value = iso(md(z[1])); } }
+});
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape" && editor) closeDrawer();
+  if (ev.key === "Enter" && ev.target.matches("tr[data-edit-planting]")) openPlanting(plantings.find(p => p.id === ev.target.dataset.editPlanting));
+});
+function upsertLocal(arr, item) { const i = arr.findIndex(x => x.id === item.id); if (i >= 0) arr[i] = item; else arr.push(item); }
+
+/* settings */
+$("#s-zone").innerHTML = Object.keys(ZONES).map(z => `<option value="${z}">Zone ${z}</option>`).join("");
+function openSettings() {
+  const p = $("#settingsPanel"); p.hidden = false;
+  $("#s-loc").value = settings.location || ""; $("#s-zone").value = settings.zone;
+  $("#s-lf").value = iso(LF()); $("#s-ff").value = iso(FF());
+  $("#s-loc").focus();
+}
+$("#editSettings").onclick = openSettings;
+$("#s-cancel").onclick = () => $("#settingsPanel").hidden = true;
+$("#s-save").onclick = async () => {
+  const lf = $("#s-lf").value, ff = $("#s-ff").value;
+  if (!lf || !ff) { flash("Both frost dates are needed."); return; }
+  settings = { zone: $("#s-zone").value, lastFrost: lf.slice(5), firstFrost: ff.slice(5), location: $("#s-loc").value.trim(), isDefault: false };
+  $("#settingsPanel").hidden = true; render();
+  try { await saveDoc("settings/garden", settings); flash("Season saved. All windows now use your dates."); } catch (e) {}
+};
+
+/* ---------- render ---------- */
+let ready = false;
+function render() {
+  renderHeader();
+  if (tab === "week") renderWeek();
+  if (tab === "beds") renderBeds();
+  if (tab === "calendar") renderCalendar();
+  if (tab === "log") renderLog();
+  if (tab === "orchard") renderOrchard();
+}
+
+const initial = (location.hash || "").slice(1);
+setTab(["week", "beds", "calendar", "log", "orchard"].includes(initial) ? initial : "week");
+
+/* ---------- connect ---------- */
+(async () => {
+  try { db = window.claude?.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  ready = true;
+  if (!db) { render(); return; }
+  live = true;
+  const docs = snap => snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  db.doc("settings/garden").onSnapshot(s => { settings = s.exists ? { ...DEFAULT_SETTINGS, ...s.data() } : { ...DEFAULT_SETTINGS }; render(); }, () => {});
+  db.collection("beds").onSnapshot(s => { beds = docs(s); render(); }, () => {});
+  db.collection("trees").onSnapshot(s => { trees = docs(s); render(); }, () => {});
+  db.collection("plantings").onSnapshot(s => { plantings = docs(s); render(); if (editor) renderDrawer(); }, () => {});
+})();
+})();
+</script>
+
+</body></html>
