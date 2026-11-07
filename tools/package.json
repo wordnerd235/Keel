@@ -5,11 +5,15 @@
   "scripts": {
     "build-firebase": "esbuild firebase-entry.js --bundle --format=esm --minify --target=es2020 --legal-comments=none --outfile=../assets/vendor/firebase.js",
     "build-anthropic": "esbuild anthropic-entry.js --bundle --format=esm --minify --target=es2020 --legal-comments=none --outfile=../assets/vendor/anthropic.js",
-    "build": "npm run build-firebase && npm run build-anthropic"
+    "build": "npm run build-firebase && npm run build-anthropic && npm run copy-ocr",
+    "copy-ocr": "mkdir -p ../assets/vendor/ort ../assets/ocr-models && cp node_modules/onnxruntime-web/dist/ort.wasm.bundle.min.mjs node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm ../assets/vendor/ort/ && cp node_modules/@gutenye/ocr-models/assets/ch_PP-OCRv4_det_infer.onnx ../assets/ocr-models/det.onnx && cp node_modules/@gutenye/ocr-models/assets/ch_ppocr_mobile_v2.0_cls_infer.onnx ../assets/ocr-models/cls.onnx && cp node_modules/paddleocr-browser/dist/rec_en_PP-OCRv3_infer.onnx ../assets/ocr-models/rec.onnx && tr -d '\\r' < node_modules/paddleocr-browser/dist/dict_en.txt > ../assets/ocr-models/keys.txt"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "1.1.0",
+    "@gutenye/ocr-models": "1.4.2",
     "esbuild": "0.25.10",
-    "firebase": "13.1.0"
+    "firebase": "13.1.0",
+    "onnxruntime-web": "1.30.0",
+    "paddleocr-browser": "1.0.4"
   }
 }

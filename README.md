@@ -32,11 +32,14 @@ No personal data is stored in this repository. Restore your data from a Keel bac
 
 ## Photo reading
 
-Card File's "Read card" and Pantry's "Scan" send the photo to an AI model and fill in the form:
-
-- **Gemini through Firebase AI Logic** (default when signed in): uses the free tier of the Gemini Developer API
-  through your Firebase project. No key to manage.
-- **Claude with your own Anthropic API key**: paste the key in Settings. It is stored only in that browser.
+- **Card File's "Read card"** works on the device by default: PaddleOCR text recognition (ONNX Runtime Web,
+  `assets/ocr.js`) finds the card's edges, straightens it, reads the text, and rules (`assets/card-parse.js`)
+  sort it into name, title, company, phones, emails, website and address. Free, offline, nothing leaves the
+  device; the first read downloads about 25 MB. Settings can switch Card File to the AI option below instead.
+- **Pantry's "Scan"** (and Card File, if chosen) sends the photo to an AI model:
+  - **Gemini through Firebase AI Logic** (default when signed in): the free tier of the Gemini Developer API
+    through your Firebase project. No key to manage.
+  - **Claude with your own Anthropic API key**: paste the key in Settings. It is stored only in that browser.
 
 ## Running locally
 

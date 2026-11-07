@@ -11,6 +11,8 @@ Fonts only). They were built as Claude Artifacts and are kept as published, with
    It is now built from the saved plan (`plan/current`), and `plan.intro`, if present, overrides it. The fallback
    plan (`DEF`, used only until a plan is saved) and the placeholder numbers in the page are generic.
 4. **Card File:** the "Where we met" example is generic.
+5. **Card File:** `cropCard` also accepts an exact tilted outline (`photos[i].card` = `{ cx, cy, w, h, angle }`)
+   from Keel's on-device reader and crops the card straight; without it, the original box crop runs.
 
 Opening a tool's page directly redirects to Keel with that tool selected.
 

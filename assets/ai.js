@@ -7,6 +7,9 @@
 //   claude: Claude through the Anthropic API with your own API key, stored only in this browser.
 //
 // Both get the page's prompt unchanged plus the photos, and must return the JSON the prompt asks for.
+//
+// Card File reads cards on the device by default (PaddleOCR, assets/ocr.js, rules in assets/card-parse.js):
+// free, offline, no account. Settings can switch Card File back to the provider above.
 
 const PREFS_KEY = "keel:ai";
 // Gemini model names change over time. Keel tries these in order until one answers, remembers the one
@@ -22,8 +25,9 @@ const SYSTEM = "You read photos for a household app. Reply with only the JSON th
 const codedError = (code, message) => Object.assign(new Error(message), { code });
 
 export function loadPrefs() {
-  try { return { provider: "auto", geminiModel: "", claudeKey: "", ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") }; }
-  catch (e) { return { provider: "auto", geminiModel: "", claudeKey: "" }; }
+  const base = { provider: "auto", geminiModel: "", claudeKey: "", cardReader: "ocr" };
+  try { return { ...base, ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}") }; }
+  catch (e) { return base; }
 }
 export function savePrefs(p) { try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch (e) { /* ignore */ } }
 
@@ -35,6 +39,12 @@ export function activeProvider(prefs, firebaseReady) {
   // auto: Claude if a key is saved, otherwise Gemini when Firebase is signed in.
   if (prefs.claudeKey) return "claude";
   return firebaseReady ? "gemini" : null;
+}
+
+// The reader a given tool uses: "ocr" (on-device, Card File's default), "gemini", "claude" or null.
+export function providerFor(app, prefs, firebaseReady) {
+  if (app === "card-file" && prefs.cardReader !== "ai") return "ocr";
+  return activeProvider(prefs, firebaseReady);
 }
 
 export const limits = () => ({ images: { maxCount: 4, mediaTypes: MEDIA_TYPES, maxBytes: 20 * 1024 * 1024 } });
@@ -171,6 +181,14 @@ async function viaClaude(prefs, prompt, imgs) {
 // The call behind sample.json(prompt, { images }). images: [{ b64, type }].
 export async function readPhotos({ provider, prefs, fb }, prompt, images) {
   if (!provider) throw codedError("sampling_disabled", "Photo reading is off. Turn it on in Keel's Settings.");
+  if (provider === "ocr") {
+    let ocr;
+    try { ocr = await import("./ocr.js"); await ocr.warmUp(); }
+    catch (e) { console.error(e); throw codedError("unavailable", "The card reader couldn't load. The first read needs a connection to download it (about 25 MB)."); }
+    const blobs = images.map(({ b64, type }) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: type || "image/jpeg" }); });
+    try { return await ocr.readCard(blobs); }
+    catch (e) { console.error(e); throw codedError("image_rejected", "The card reader couldn't read that photo."); }
+  }
   const imgs = await prepare(images);
   if (provider === "claude") return viaClaude(prefs, prompt, imgs);
   return viaGemini(fb, prefs, prompt, imgs);

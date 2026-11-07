@@ -122,15 +122,15 @@
   };
 
   function sampleApi() {
-    const limits = host.sampleLimits();
+    const limits = host.sampleLimits(APP);
     if (!limits) return null;
     return {
-      limits: async () => clone(host.sampleLimits()),
+      limits: async () => clone(host.sampleLimits(APP)),
       json: async (prompt, opts = {}) => {
         if (opts.signal && opts.signal.aborted) { const e = new Error("Stopped"); e.code = "cancelled"; throw e; }
         const images = [];
         for (const img of opts.images || []) { const { b64, type } = await toB64(img); images.push({ b64, type: img.type || type || "image/jpeg" }); }
-        const job = host.sampleJson(String(prompt), images);
+        const job = host.sampleJson(APP, String(prompt), images);
         const aborted = new Promise((_, rej) => {
           if (opts.signal) opts.signal.addEventListener("abort", () => { const e = new Error("Stopped"); e.code = "cancelled"; rej(e); }, { once: true });
         });

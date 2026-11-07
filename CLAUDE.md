@@ -27,6 +27,10 @@ The calorie tracker **Intake** is a separate app and repo (wordnerd235/intake); 
 - No build step for the app itself. `assets/vendor/*.js` are bundled from npm by `tools/` (esbuild); rebuild
   with `cd tools && npm install && npm run build` when updating Firebase or the Anthropic SDK, with exact,
   pinned versions.
+- Card File reads cards on-device by default (`assets/ocr.js`: card edge finding, PaddleOCR det/cls/rec via
+  ONNX Runtime Web; `assets/card-parse.js`: rules that sort lines into fields). Models are in
+  `assets/ocr-models/` (see its README). Test changes against varied card photos (tilted, sideways, upside
+  down, dark, white on white) and check the parsed fields, not just that it runs.
 - Photo reading with Claude uses the official Anthropic SDK (`assets/vendor/anthropic.js`) in the browser with
   the user's own key (`dangerouslyAllowBrowser: true`), model `claude-opus-5-5`, server-side fallbacks on.
   Gemini goes through Firebase AI Logic (`firebase/ai`, Gemini Developer API backend).

@@ -363,8 +363,22 @@ fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; min-width
     c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
     return { blob: await toJpeg(c, file), w: c.width, h: c.height };
   }
+  // Keel: crop a tilted card exactly. card = { cx, cy (0-1 of width/height), w, h (fractions of the photo's
+  // width), angle (degrees the card is tilted, clockwise) }; then turn it upright by rotate (0/90/180/270).
+  async function straightCrop(img, card, rotate) {
+    const src = await decode(img.blob);
+    const rot = [90, 180, 270].includes(Number(rotate)) ? Number(rotate) : 0, turn = rot === 90 || rot === 270;
+    const W = card.w * src.width, H = card.h * src.width;
+    const c = document.createElement("canvas");
+    c.width = Math.round(turn ? H : W); c.height = Math.round(turn ? W : H);
+    const g = c.getContext("2d");
+    g.translate(c.width / 2, c.height / 2); g.rotate(rot * Math.PI / 180); g.rotate(-card.angle * Math.PI / 180);
+    g.drawImage(src, -card.cx * src.width, -card.cy * src.height);
+    return { blob: await toJpeg(c, img.blob), w: c.width, h: c.height };
+  }
   // Crop to the card's edges (box = [left, top, right, bottom] as 0-1 fractions) and turn it upright.
-  async function cropCard(img, box, rotate) {
+  async function cropCard(img, box, rotate, card) {
+    if (card && [card.cx, card.cy, card.w, card.h, card.angle].every(Number.isFinite) && card.w > 0.1 && card.h > 0.05) return straightCrop(img, card, rotate); // Keel
     const ok = Array.isArray(box) && box.length === 4 && box.every(n => typeof n === "number" && n >= 0 && n <= 1) && box[2] - box[0] > 0.2 && box[3] - box[1] > 0.2;
     const rot = [90, 180, 270].includes(Number(rotate)) ? Number(rotate) : 0;
     if (!ok && !rot) return null;
@@ -671,7 +685,7 @@ Reply with only this JSON object:
         const p = photos[i]; const s = edit && edit[sides[i]];
         if (!p || !s || !s.blob) continue;
         const raw = { blob: s.blob, w: 0, h: 0 }; raw.w = s.aspect || 0; raw.h = s.aspect ? 1 : 0;
-        const cropped = await cropCard(raw, p.box, p.rotate).catch(() => null);
+        const cropped = await cropCard(raw, p.box, p.rotate, p.card).catch(() => null);
         if (cropped) setImage(sides[i], cropped, raw);
       }
       st.className = "status ok"; st.textContent = "Done. Check the details, then save."; st.dataset.done = "1";

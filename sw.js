@@ -2,11 +2,11 @@
 // Network first, so a new deploy shows up on the next load; the cached copy is used only offline.
 // Your data is not cached here: Firestore keeps its own offline copy, and local mode uses localStorage.
 
-const CACHE = "keel-v1";
+const CACHE = "keel-v2";
 const SHELL = [
   "./", "index.html", "manifest.webmanifest",
   "assets/keel.css", "assets/keel.js", "assets/store.js", "assets/cloud.js", "assets/ai.js", "assets/today.js",
-  "assets/app-bridge.js", "assets/firebase-config.js", "assets/icons/icon.svg", "assets/icons/icon-192.png",
+  "assets/app-bridge.js", "assets/firebase-config.js", "assets/ocr.js", "assets/card-parse.js", "assets/icons/icon.svg", "assets/icons/icon-192.png",
   "apps/cleaning-rounds/index.html", "apps/house-upkeep-ledger/index.html", "apps/garden-planner/index.html",
   "apps/pantry-recipe-book/index.html", "apps/garage-logbook/index.html", "apps/cut-to-150/index.html",
   "apps/card-file/index.html",

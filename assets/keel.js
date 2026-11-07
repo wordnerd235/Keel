@@ -70,9 +70,9 @@ window.keel = {
   themeFor: () => { const t = pref("keel:theme", "system"); return t === "light" || t === "dark" ? t : null; },
   download(filename, b64, type) { saveFile(filename, base64ToBlob(b64, type)); },
   uploadAsset: (app, b64, type) => store.putAsset(app, base64ToBlob(b64, type)),
-  sampleLimits: () => (currentProvider() ? ai.limits() : null),
-  sampleJson: async (prompt, images) => {
-    try { return await ai.readPhotos({ provider: currentProvider(), prefs: S.ai, fb: S.fb }, prompt, images); }
+  sampleLimits: (app) => (providerFor(app) ? ai.limits() : null),
+  sampleJson: async (app, prompt, images) => {
+    try { return await ai.readPhotos({ provider: providerFor(app), prefs: S.ai, fb: S.fb }, prompt, images); }
     catch (e) {
       // The pages show their own short message; setup problems also get the real reason here.
       if (e && ["not_granted", "sampling_disabled", "rate_limited", "unavailable"].includes(e.code)) toast(e.message);
@@ -81,6 +81,7 @@ window.keel = {
   },
 };
 function currentProvider() { return ai.activeProvider(S.ai, store.mode === "firebase" && !!S.fb); }
+function providerFor(app) { return ai.providerFor(app, S.ai, store.mode === "firebase" && !!S.fb); }
 
 function saveFile(filename, blob) {
   const a = document.createElement("a");
@@ -576,7 +577,7 @@ function renderNotMember() {
 // ---------- settings ----------
 function renderSettings() {
   const theme = pref("keel:theme", "system"), p = pins(), prov = currentProvider();
-  const provText = prov === "claude" ? `Using Claude (${ai.CLAUDE_MODEL_ID}) with your API key.` : prov === "gemini" ? "Using Gemini through your Firebase project." : "Off. Card File and Pantry hide their scan buttons.";
+  const provText = prov === "claude" ? `Right now: Claude (${ai.CLAUDE_MODEL_ID}) with your API key.` : prov === "gemini" ? "Right now: Gemini through your Firebase project." : "Right now it's off (the scan button is hidden): sign in to use Gemini, or add a Claude key below.";
   let account;
   if (!cloud.configured()) {
     account = `<p>Keel is saving to <b>this browser only</b>. Your phone and computer each keep their own copy.</p>
@@ -598,7 +599,14 @@ function renderSettings() {
 
     <section aria-labelledby="h-ai">
       <h2 id="h-ai">Photo reading</h2>
-      <p>Lets Card File read business cards and Pantry scan groceries. ${esc(provText)}</p>
+      <div style="display:flex;flex-direction:column;gap:8px" role="radiogroup" aria-label="Card File reads cards with">
+        <p><b>Card File</b> reads business cards with:</p>
+        ${[
+          ["ocr", "This device (recommended)", "Built-in text recognition. Free, works offline, nothing leaves your phone. The first read downloads about 25 MB."],
+          ["ai", "The AI choice below", "Claude or Gemini, whichever is set below. Better at telling a name from a company, but needs a connection."],
+        ].map(([v, b, t]) => `<label class="opt"><input type="radio" name="card-reader" value="${v}" ${(S.ai.cardReader || "ocr") === v ? "checked" : ""}><span><b>${b}</b><span>${t}</span></span></label>`).join("")}
+      </div>
+      <p><b>Pantry's scan</b>${S.ai.cardReader === "ai" ? " and Card File use" : " uses"} AI. ${esc(provText)}</p>
       <div style="display:flex;flex-direction:column;gap:8px" role="radiogroup" aria-label="Photo reading">
         ${[
           ["auto", "Automatic", "Claude if you've saved a key below, otherwise Gemini when you're signed in."],
@@ -659,6 +667,7 @@ function renderSettings() {
     } catch (e) { toast("Couldn't copy: " + (e.message || e)); }
   });
 
+  document.querySelectorAll('input[name="card-reader"]').forEach((r) => r.addEventListener("change", () => { S.ai.cardReader = r.value; ai.savePrefs(S.ai); reloadAiFrames(); renderSettings(); }));
   document.querySelectorAll('input[name="ai-prov"]').forEach((r) => r.addEventListener("change", () => { S.ai.provider = r.value; ai.savePrefs(S.ai); reloadAiFrames(); renderSettings(); }));
   on("ai-key-save", "click", () => {
     const k = $("#ai-key").value.trim();
